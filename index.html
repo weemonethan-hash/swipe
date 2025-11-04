@@ -3,304 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Endless Scroll for Money 💸</title>
+<title>Scroll for Money 💸</title>
 <style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    overflow: hidden;
-    font-family: 'Poppins', sans-serif;
+  html,body{margin:0;height:100%;overflow:hidden;font-family:Poppins,sans-serif;color:white;}
+  body{
+    background:linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966);
+    background-size:100% 1000%;
+    transition:background-position .1s linear;
   }
-
-  body {
-    background: linear-gradient(0deg, #ff66cc, #66ccff, #99ff66, #ff9966);
-    background-size: 100% 1000%;
-    color: white;
-    transition: background-position 0.2s linear;
+  #world{position:absolute;width:100%;height:100%;transition:transform .1s linear;}
+  #hud{
+    position:fixed;top:10px;left:10px;
+    background:rgba(20,20,20,.8);border:2px solid #00ff88;border-radius:12px;
+    padding:10px 15px;z-index:1000;box-shadow:0 0 15px #00ff88;
   }
-
-  #gameArea {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  #money{font-size:1.6em;color:#00ff88;text-shadow:0 0 10px #00ff88;font-weight:bold;}
+  #xpBar{height:10px;width:100%;background:rgba(255,255,255,.2);border-radius:5px;margin-top:4px;overflow:hidden;}
+  #xpFill{height:100%;width:0%;background:linear-gradient(90deg,#00ff88,#00ccff);transition:width .2s;}
+  button{
+    display:block;margin-top:6px;padding:6px 12px;background:#00ff88;color:#111;
+    border:none;border-radius:6px;font-weight:bold;cursor:pointer;transition:.2s;
+  }button:hover{transform:scale(1.05);background:#00cc6a;}
+  .money-block{
+    position:absolute;font-size:50px;border:3px solid white;border-radius:10px;
+    padding:5px 10px;cursor:pointer;transition:transform .2s;user-select:none;
   }
-
-  #world {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.1s linear;
+  .fake{border-color:red;}
+  .money-block:hover{transform:scale(1.2);}
+  .float{
+    position:absolute;color:#00ff88;font-weight:bold;pointer-events:none;
+    animation:float 1s ease-out forwards;text-shadow:0 0 10px #00ff88;
   }
-
-  #hud {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background: rgba(20, 20, 20, 0.8);
-    border: 2px solid #00ff88;
-    border-radius: 12px;
-    padding: 10px 15px;
-    z-index: 1000;
-    text-align: left;
-    box-shadow: 0 0 15px #00ff88;
-  }
-
-  #money {
-    font-size: 1.8em;
-    font-weight: bold;
-    color: #00ff88;
-    text-shadow: 0 0 10px #00ff88;
-  }
-
-  #xpBar {
-    height: 10px;
-    width: 100%;
-    background: rgba(255,255,255,0.2);
-    border-radius: 5px;
-    margin-top: 5px;
-    overflow: hidden;
-  }
-
-  #xpFill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #00ff88, #00ccff);
-    transition: width 0.2s ease;
-  }
-
-  #stats {
-    margin-top: 5px;
-    font-size: 0.9em;
-  }
-
-  button {
-    display: block;
-    margin-top: 10px;
-    padding: 8px 16px;
-    background-color: #00ff88;
-    color: #111;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  button:hover {
-    transform: scale(1.05);
-    background-color: #00cc6a;
-  }
-
-  .money-block {
-    position: absolute;
-    font-size: 50px;
-    border: 3px solid white;
-    border-radius: 10px;
-    padding: 5px 10px;
-    cursor: pointer;
-    transition: transform 0.2s;
-    user-select: none;
-  }
-
-  .money-block:hover {
-    transform: scale(1.2);
-  }
-
-  .money-float {
-    position: absolute;
-    color: #00ff88;
-    font-weight: bold;
-    pointer-events: none;
-    animation: floatUp 1s ease-out forwards;
-    text-shadow: 0 0 10px #00ff88;
-  }
-
-  @keyframes floatUp {
-    from { transform: translateY(0); opacity: 1; }
-    to { transform: translateY(-50px); opacity: 0; }
-  }
-
-  #scrollIndicator {
-    position: fixed;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #fff;
-    background: rgba(0,0,0,0.4);
-    padding: 8px 15px;
-    border-radius: 10px;
-    font-weight: bold;
-    box-shadow: 0 0 10px #00ff88;
-  }
+  @keyframes float{to{transform:translateY(-50px);opacity:0;}}
 </style>
 </head>
 <body>
-<div id="gameArea">
-  <div id="hud">
-    <div>💰 Money: <span id="money">0</span></div>
-    <div>⭐ Level: <span id="level">1</span></div>
-    <div id="xpBar"><div id="xpFill"></div></div>
-    <div id="stats">
-      ⬆️ Scroll Income: <span id="scrollIncome">1</span><br>
-      🧱 Block Value: <span id="blockValue">10</span>
-    </div>
-    <button id="upgradeBlock">Upgrade Block 💎 (Cost: 100)</button>
-    <button id="upgradeScroll">Upgrade Scroll 🚀 (Cost: 150)</button>
-  </div>
-  <div id="world"></div>
-  <div id="scrollIndicator">Scroll to Move 🌈</div>
+<div id="hud">
+  💰 <span id="money">0</span><br>
+  ⭐ Level: <span id="level">1</span>
+  <div id="xpBar"><div id="xpFill"></div></div>
+  <div>⬆️ Scroll: <span id="scrollIncome">1</span></div>
+  <div>🧱 Block: <span id="blockValue">10</span></div>
+  <button id="upB">Upgrade Block 💎 (100)</button>
+  <button id="upS">Upgrade Scroll 🚀 (150)</button>
 </div>
-
-<audio id="cashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" preload="auto"></audio>
-
+<div id="world"></div>
+<audio id="ding" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
 <script>
-  // === Save/load ===
-  let save = JSON.parse(localStorage.getItem("scrollGameSave")) || {
-    money: 0,
-    scrollIncome: 1,
-    blockValue: 10,
-    level: 1,
-    xp: 0
-  };
-
-  let { money, scrollIncome, blockValue, level, xp } = save;
-  let blockUpgradeCost = 100;
-  let scrollUpgradeCost = 150;
-  let worldY = 0;
-  let bgPos = 0;
-
-  const moneyDisplay = document.getElementById("money");
-  const scrollDisplay = document.getElementById("scrollIncome");
-  const blockDisplay = document.getElementById("blockValue");
-  const upgradeBlock = document.getElementById("upgradeBlock");
-  const upgradeScroll = document.getElementById("upgradeScroll");
-  const world = document.getElementById("world");
-  const cashSound = document.getElementById("cashSound");
-  const scrollIndicator = document.getElementById("scrollIndicator");
-  const levelDisplay = document.getElementById("level");
-  const xpFill = document.getElementById("xpFill");
-
-  function updateDisplays() {
-    moneyDisplay.textContent = Math.floor(money);
-    scrollDisplay.textContent = scrollIncome;
-    blockDisplay.textContent = blockValue;
-    levelDisplay.textContent = level;
-    let xpPercent = (xp / xpNeeded()) * 100;
-    xpFill.style.width = xpPercent + "%";
-  }
-
-  function playCashSound() {
-    cashSound.currentTime = 0;
-    cashSound.play().catch(() => {});
-  }
-
-  function spawnMoneyFloat(x, y, amount) {
-    const float = document.createElement("div");
-    float.className = "money-float";
-    float.style.left = `${x}px`;
-    float.style.top = `${y}px`;
-    float.textContent = `+${Math.floor(amount)}`;
-    document.body.appendChild(float);
-    setTimeout(() => float.remove(), 1000);
-  }
-
-  function xpNeeded() {
-    return 100 * Math.pow(1.6, level - 1);
-  }
-
-  function addXP(amount) {
-    xp += amount;
-    if (xp >= xpNeeded()) {
-      xp -= xpNeeded();
-      level++;
-      playCashSound();
+let save=JSON.parse(localStorage.getItem("moneyScrollSave"))||{money:0,scroll:1,block:10,level:1,xp:0};
+let {money,scroll:blockScroll,block,level,xp}=save;
+let upBC=100,upSC=150,worldY=0,bgY=0;
+const world=document.getElementById("world"),ding=document.getElementById("ding");
+const mD=document.getElementById("money"),lD=document.getElementById("level"),
+sD=document.getElementById("scrollIncome"),bD=document.getElementById("blockValue"),xpF=document.getElementById("xpFill");
+function xpNeed(){return 100*Math.pow(1.6,level-1);}
+function upd(){mD.textContent=Math.floor(money);lD.textContent=level;sD.textContent=blockScroll;bD.textContent=block;xpF.style.width=(xp/xpNeed()*100)+"%";}
+function sound(){ding.currentTime=0;ding.play().catch(()=>{});}
+function saveG(){localStorage.setItem("moneyScrollSave",JSON.stringify({money,scroll:blockScroll,block,level,xp}));}
+setInterval(saveG,2000);
+function float(x,y,t){let f=document.createElement("div");f.className="float";f.style.left=x+"px";f.style.top=y+"px";f.textContent=t;document.body.appendChild(f);setTimeout(()=>f.remove(),1000);}
+function addXP(a){xp+=a;if(xp>=xpNeed()){xp-=xpNeed();level++;sound();}}
+window.addEventListener("wheel",e=>{
+  worldY+=e.deltaY*0.5;bgY+=e.deltaY*0.5;
+  world.style.transform=`translateY(${-worldY}px)`;document.body.style.backgroundPosition=`0px ${bgY}px`;
+  const earn=Math.abs(e.deltaY)*blockScroll*0.05;money+=earn;addXP(Math.abs(e.deltaY)*0.02);
+  if(Math.random()<0.06)spawnBlock();
+  upd();
+});
+function spawnBlock(){
+  const b=document.createElement("div");b.className="money-block";
+  const fake=Math.random()<0.25;
+  if(fake)b.classList.add("fake");
+  b.textContent="💰";
+  b.style.top=worldY+Math.random()*innerHeight-innerHeight/2+"px";
+  b.style.left=Math.random()*(innerWidth-100)+"px";
+  world.appendChild(b);
+  b.onclick=e=>{
+    if(fake){
+      const loss=Math.ceil(level*0.5);
+      level=Math.max(1,level-loss);
+      xp=0;float(e.clientX,e.clientY,"-"+loss+" lvl");b.remove();
+    }else{
+      money+=block;float(e.clientX,e.clientY,"+"+block);sound();b.remove();
     }
-  }
-
-  // Save progress
-  function saveGame() {
-    localStorage.setItem(
-      "scrollGameSave",
-      JSON.stringify({ money, scrollIncome, blockValue, level, xp })
-    );
-  }
-
-  setInterval(saveGame, 2000);
-
-  // Scroll = move world + earn money + xp
-  window.addEventListener("wheel", (e) => {
-    const delta = e.deltaY;
-    worldY += delta * 0.5;
-    world.style.transform = `translateY(${-worldY}px)`;
-
-    bgPos += delta * 0.1;
-    document.body.style.backgroundPosition = `0px ${bgPos}px`;
-
-    const earned = Math.abs(delta) * scrollIncome * 0.05;
-    money += earned;
-    addXP(Math.abs(delta) * 0.02);
-    updateDisplays();
-
-    if (Math.random() < 0.05) spawnMoneyBlock();
-    scrollIndicator.style.transform = `translateX(-50%) scale(${1 + Math.min(Math.abs(delta) / 300, 0.5)})`;
-  });
-
-  setInterval(() => {
-    scrollIndicator.style.transform = 'translateX(-50%) scale(1)';
-  }, 300);
-
-  // Upgrades
-  upgradeBlock.addEventListener("click", () => {
-    if (money >= blockUpgradeCost) {
-      money -= blockUpgradeCost;
-      blockValue = Math.round(blockValue * 1.7);
-      blockUpgradeCost = Math.round(blockUpgradeCost * 2.2);
-      updateDisplays();
-      upgradeBlock.textContent = `Upgrade Block 💎 (Cost: ${blockUpgradeCost})`;
-      playCashSound();
-    } else alert("Not enough money!");
-  });
-
-  upgradeScroll.addEventListener("click", () => {
-    if (money >= scrollUpgradeCost) {
-      money -= scrollUpgradeCost;
-      scrollIncome = Math.round(scrollIncome * 1.8);
-      scrollUpgradeCost = Math.round(scrollUpgradeCost * 2.4);
-      updateDisplays();
-      upgradeScroll.textContent = `Upgrade Scroll 🚀 (Cost: ${scrollUpgradeCost})`;
-      playCashSound();
-    } else alert("Not enough money!");
-  });
-
-  // Money blocks
-  function spawnMoneyBlock() {
-    const block = document.createElement("div");
-    block.className = "money-block";
-    block.textContent = "💰";
-    block.style.top = `${worldY + Math.random() * window.innerHeight - window.innerHeight / 2}px`;
-    block.style.left = `${Math.random() * (window.innerWidth - 100)}px`;
-    world.appendChild(block);
-
-    block.addEventListener("click", (e) => {
-      money += blockValue;
-      updateDisplays();
-      playCashSound();
-      spawnMoneyFloat(e.clientX, e.clientY, blockValue);
-      block.remove();
-    });
-
-    setTimeout(() => {
-      if (block.parentNode) block.remove();
-    }, 10000);
-  }
-
-  // Random spawns
-  setInterval(() => {
-    if (Math.random() < 0.05) spawnMoneyBlock();
-  }, 1500);
-
-  updateDisplays();
+    upd();
+  };
+  setTimeout(()=>b.remove(),8000);
+}
+document.getElementById("upB").onclick=()=>{
+  if(money>=upBC){money-=upBC;block=Math.round(block*1.7);upBC=Math.round(upBC*2.2);
+    event.target.textContent=`Upgrade Block 💎 (${upBC})`;sound();upd();}
+};
+document.getElementById("upS").onclick=()=>{
+  if(money>=upSC){money-=upSC;blockScroll=Math.round(blockScroll*1.8);upSC=Math.round(upSC*2.4);
+    event.target.textContent=`Upgrade Scroll 🚀 (${upSC})`;sound();upd();}
+};
+upd();
 </script>
 </body>
 </html>
