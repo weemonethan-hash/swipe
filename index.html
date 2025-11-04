@@ -8,10 +8,20 @@
   html, body {
     margin: 0;
     height: 100%;
-    overflow: hidden; /* hide scrollbar */
-    background: linear-gradient(180deg, #111 0%, #222 50%, #111 100%);
-    color: #fff;
+    overflow: hidden;
     font-family: 'Poppins', sans-serif;
+  }
+
+  body {
+    background: linear-gradient(0deg, #ff66cc, #66ccff, #99ff66, #ff9966);
+    background-size: 100% 800%;
+    animation: bgScroll 10s linear infinite;
+    color: white;
+  }
+
+  @keyframes bgScroll {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 100%; }
   }
 
   #gameArea {
@@ -25,7 +35,7 @@
     position: fixed;
     top: 10px;
     left: 10px;
-    background: rgba(20, 20, 20, 0.9);
+    background: rgba(30, 30, 30, 0.8);
     border: 2px solid #00ff88;
     border-radius: 12px;
     padding: 10px 15px;
@@ -105,6 +115,20 @@
     from { transform: translateY(0); opacity: 1; }
     to { transform: translateY(-50px); opacity: 0; }
   }
+
+  /* Visual scroll indicator */
+  #scrollIndicator {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    background: rgba(0,0,0,0.4);
+    padding: 8px 15px;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 0 10px #00ff88;
+  }
 </style>
 </head>
 <body>
@@ -118,9 +142,9 @@
     <button id="upgradeBlock">Upgrade Block 💎 (Cost: 100)</button>
     <button id="upgradeScroll">Upgrade Scroll 🚀 (Cost: 150)</button>
   </div>
+  <div id="scrollIndicator">Keep Scrolling! 🌈</div>
 </div>
 
-<!-- Cha-ching sound -->
 <audio id="cashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" preload="auto"></audio>
 
 <script>
@@ -129,7 +153,7 @@
   let blockValue = 10;
   let blockUpgradeCost = 100;
   let scrollUpgradeCost = 150;
-  let scrollY = 0; // manual scroll position
+  let scrollSpeed = 0;
 
   const moneyDisplay = document.getElementById("money");
   const scrollDisplay = document.getElementById("scrollIncome");
@@ -138,6 +162,7 @@
   const upgradeScroll = document.getElementById("upgradeScroll");
   const gameArea = document.getElementById("gameArea");
   const cashSound = document.getElementById("cashSound");
+  const scrollIndicator = document.getElementById("scrollIndicator");
 
   function updateMoneyDisplay() {
     moneyDisplay.textContent = Math.floor(money);
@@ -158,19 +183,22 @@
     setTimeout(() => float.remove(), 1000);
   }
 
-  // Infinite scroll logic: scrollY goes up as user scrolls
+  // "Scrolling" visual + earning money
   window.addEventListener("wheel", (e) => {
-    scrollY += e.deltaY;
-    if (scrollY < 0) scrollY = 0; // keep it positive
-    const earned = Math.abs(e.deltaY) * scrollIncome * 0.05;
+    scrollSpeed = Math.abs(e.deltaY);
+    const earned = scrollSpeed * scrollIncome * 0.05;
     money += earned;
     updateMoneyDisplay();
-    if (earned > 0) {
-      if (Math.random() < 0.0025) spawnMoneyBlock();
-    }
+    if (Math.random() < 0.05) spawnMoneyBlock(); // spawn more often for fun
+    scrollIndicator.style.transform = `translateX(-50%) scale(${1 + Math.min(scrollSpeed / 500, 0.5)})`;
   });
 
-  // Upgrade buttons
+  // Reset scroll indicator bounce
+  setInterval(() => {
+    scrollIndicator.style.transform = 'translateX(-50%) scale(1)';
+  }, 300);
+
+  // Upgrades
   upgradeBlock.addEventListener("click", () => {
     if (money >= blockUpgradeCost) {
       money -= blockUpgradeCost;
@@ -220,10 +248,10 @@
     }, 6000);
   }
 
-  // Periodically spawn random blocks for fun
+  // Random spawns over time
   setInterval(() => {
-    if (Math.random() < 0.02) spawnMoneyBlock();
-  }, 1000);
+    if (Math.random() < 0.05) spawnMoneyBlock();
+  }, 1500);
 </script>
 </body>
 </html>
