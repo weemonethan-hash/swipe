@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scroll for Money 💸</title>
+<style>
+  body {
+    margin: 0;
+    height: 10000px; /* Very tall so you can scroll */
+    background: linear-gradient(to bottom, #1a1a1a, #0f0f0f);
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    overflow-x: hidden;
+  }
+
+  #hud {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid #00ff88;
+    border-radius: 8px;
+    padding: 10px 15px;
+    z-index: 1000;
+    text-align: left;
+  }
+
+  #money {
+    font-size: 1.5em;
+    color: #00ff88;
+  }
+
+  #upgradeButton {
+    display: block;
+    margin-top: 10px;
+    padding: 6px 12px;
+    background-color: #00ff88;
+    color: #111;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  #upgradeButton:hover {
+    background-color: #00cc6a;
+  }
+
+  .money-block {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background-color: gold;
+    border-radius: 10px;
+    border: 3px solid #ffdd33;
+    box-shadow: 0 0 10px gold;
+    text-align: center;
+    line-height: 80px;
+    font-size: 20px;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s;
+  }
+
+  .money-block:hover {
+    transform: scale(1.1);
+  }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div>💵 Money: <span id="money">0</span></div>
+  <div>⬆️ Scroll Income: <span id="scrollIncome">1</span></div>
+  <div>🧱 Block Value: <span id="blockValue">10</span></div>
+  <button id="upgradeButton">Upgrade Block Value (Cost: 100)</button>
+</div>
+
+<script>
+  let money = 0;
+  let scrollIncome = 1;
+  let blockValue = 10;
+  let upgradeCost = 100;
+  let lastScrollY = 0;
+
+  const moneyDisplay = document.getElementById("money");
+  const scrollDisplay = document.getElementById("scrollIncome");
+  const blockDisplay = document.getElementById("blockValue");
+  const upgradeButton = document.getElementById("upgradeButton");
+
+  // Earn money by scrolling
+  window.addEventListener("scroll", () => {
+    const scrollDelta = Math.abs(window.scrollY - lastScrollY);
+    lastScrollY = window.scrollY;
+    money += scrollDelta * scrollIncome * 0.05; // small earn rate
+    moneyDisplay.textContent = Math.floor(money);
+
+    // Randomly spawn money block
+    if (Math.random() < 0.002) spawnMoneyBlock();
+  });
+
+  // Upgrade button
+  upgradeButton.addEventListener("click", () => {
+    if (money >= upgradeCost) {
+      money -= upgradeCost;
+      blockValue = Math.round(blockValue * 1.5);
+      upgradeCost = Math.round(upgradeCost * 1.8);
+      moneyDisplay.textContent = Math.floor(money);
+      blockDisplay.textContent = blockValue;
+      upgradeButton.textContent = `Upgrade Block Value (Cost: ${upgradeCost})`;
+    } else {
+      alert("Not enough money!");
+    }
+  });
+
+  // Spawn a clickable money block
+  function spawnMoneyBlock() {
+    const block = document.createElement("div");
+    block.className = "money-block";
+    block.textContent = "💰";
+    block.style.top = `${window.scrollY + Math.random() * window.innerHeight}px`;
+    block.style.left = `${Math.random() * (window.innerWidth - 100)}px`;
+
+    document.body.appendChild(block);
+
+    block.addEventListener("click", () => {
+      money += blockValue;
+      moneyDisplay.textContent = Math.floor(money);
+      block.remove();
+    });
+
+    // Remove after 6 seconds if unclicked
+    setTimeout(() => {
+      if (block.parentNode) block.remove();
+    }, 6000);
+  }
+</script>
+
+</body>
+</html>
