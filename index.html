@@ -124,7 +124,7 @@ autoBtn.onclick=()=>{
 
 setInterval(()=>{
   if(auto){
-    const delta=2; // slow scroll speed
+    const delta=8; // slow scroll speed
     worldY+=delta*0.5;bgY+=delta*0.5;
     world.style.transform=`translateY(${-worldY}px)`;document.body.style.backgroundPosition=`0px ${bgY}px`;
     // earn only 12% of normal, no XP
