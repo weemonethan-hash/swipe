@@ -31,6 +31,13 @@
     overflow: hidden;
   }
 
+  #world {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.1s linear;
+  }
+
   #hud {
     position: fixed;
     top: 10px;
@@ -116,7 +123,6 @@
     to { transform: translateY(-50px); opacity: 0; }
   }
 
-  /* Visual scroll indicator */
   #scrollIndicator {
     position: fixed;
     bottom: 10px;
@@ -142,7 +148,8 @@
     <button id="upgradeBlock">Upgrade Block 💎 (Cost: 100)</button>
     <button id="upgradeScroll">Upgrade Scroll 🚀 (Cost: 150)</button>
   </div>
-  <div id="scrollIndicator">Keep Scrolling! 🌈</div>
+  <div id="world"></div>
+  <div id="scrollIndicator">Scroll to Move 🌈</div>
 </div>
 
 <audio id="cashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" preload="auto"></audio>
@@ -153,14 +160,14 @@
   let blockValue = 10;
   let blockUpgradeCost = 100;
   let scrollUpgradeCost = 150;
-  let scrollSpeed = 0;
+  let worldY = 0;
 
   const moneyDisplay = document.getElementById("money");
   const scrollDisplay = document.getElementById("scrollIncome");
   const blockDisplay = document.getElementById("blockValue");
   const upgradeBlock = document.getElementById("upgradeBlock");
   const upgradeScroll = document.getElementById("upgradeScroll");
-  const gameArea = document.getElementById("gameArea");
+  const world = document.getElementById("world");
   const cashSound = document.getElementById("cashSound");
   const scrollIndicator = document.getElementById("scrollIndicator");
 
@@ -183,14 +190,17 @@
     setTimeout(() => float.remove(), 1000);
   }
 
-  // "Scrolling" visual + earning money
+  // Scroll world + earn money
   window.addEventListener("wheel", (e) => {
-    scrollSpeed = Math.abs(e.deltaY);
-    const earned = scrollSpeed * scrollIncome * 0.05;
+    worldY += e.deltaY * 0.5; // move blocks opposite scroll
+    world.style.transform = `translateY(${-worldY}px)`;
+
+    const earned = Math.abs(e.deltaY) * scrollIncome * 0.05;
     money += earned;
     updateMoneyDisplay();
-    if (Math.random() < 0.05) spawnMoneyBlock(); // spawn more often for fun
-    scrollIndicator.style.transform = `translateX(-50%) scale(${1 + Math.min(scrollSpeed / 500, 0.5)})`;
+
+    if (Math.random() < 0.05) spawnMoneyBlock();
+    scrollIndicator.style.transform = `translateX(-50%) scale(${1 + Math.min(Math.abs(e.deltaY) / 300, 0.5)})`;
   });
 
   // Reset scroll indicator bounce
@@ -231,9 +241,9 @@
     const block = document.createElement("div");
     block.className = "money-block";
     block.textContent = "💰";
-    block.style.top = `${Math.random() * (window.innerHeight - 100)}px`;
+    block.style.top = `${worldY + Math.random() * window.innerHeight - window.innerHeight / 2}px`;
     block.style.left = `${Math.random() * (window.innerWidth - 100)}px`;
-    gameArea.appendChild(block);
+    world.appendChild(block);
 
     block.addEventListener("click", (e) => {
       money += blockValue;
@@ -245,10 +255,10 @@
 
     setTimeout(() => {
       if (block.parentNode) block.remove();
-    }, 6000);
+    }, 10000);
   }
 
-  // Random spawns over time
+  // Randomly spawn blocks
   setInterval(() => {
     if (Math.random() < 0.05) spawnMoneyBlock();
   }, 1500);
