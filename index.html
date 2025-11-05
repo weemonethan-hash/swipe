@@ -35,29 +35,10 @@
     animation:float 1s ease-out forwards;text-shadow:0 0 10px #00ff88;
   }
   @keyframes float{to{transform:translateY(-50px);opacity:0;}}
-  #authScreen{
-    position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;z-index:2000;color:white;
-  }
-  #authScreen input{margin:5px;padding:8px;border-radius:6px;border:none;width:200px;text-align:center;}
-  #authScreen button{margin:4px;padding:8px 12px;border:none;border-radius:6px;background:#00ff88;color:#111;font-weight:bold;cursor:pointer;}
-  #authScreen button:hover{background:#00cc6a;}
 </style>
 </head>
 <body>
-
-<!-- Login/Register Screen -->
-<div id="authScreen">
-  <h2>💸 Scroll for Money</h2>
-  <input id="username" placeholder="Username">
-  <input id="password" type="password" placeholder="Password">
-  <button id="registerBtn">Create Account</button>
-  <button id="loginBtn">Login</button>
-  <p id="authMsg" style="margin-top:10px;color:#00ff88;"></p>
-</div>
-
-<!-- Game HUD -->
-<div id="hud" style="display:none;">
+<div id="hud">
   💰 <span id="money">0</span><br>
   ⭐ Level: <span id="level">1</span>
   <div id="xpBar"><div id="xpFill"></div></div>
@@ -67,48 +48,12 @@
   <button id="upS">Upgrade Scroll 🚀 (150)</button>
   <button id="autoScrollBtn">🌀 Auto Scroll: OFF</button>
 </div>
-
 <div id="world"></div>
 <audio id="ding" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
-
 <script>
-// ======================
-// Local Account System
-// ======================
-let users = JSON.parse(localStorage.getItem("moneyScrollUsers")) || {};
-let currentUser = null;
-
-const authScreen = document.getElementById("authScreen");
-const msg = document.getElementById("authMsg");
-
-document.getElementById("registerBtn").onclick = () => {
-  const u = username.value.trim(), p = password.value;
-  if (!u || !p) return msg.textContent = "Please fill in both fields.";
-  if (users[u]) return msg.textContent = "Username already exists!";
-  users[u] = { password: p, save: null };
-  localStorage.setItem("moneyScrollUsers", JSON.stringify(users));
-  msg.textContent = "✅ Account created! You can now log in.";
-};
-
-document.getElementById("loginBtn").onclick = () => {
-  const u = username.value.trim(), p = password.value;
-  if (!users[u] || users[u].password !== p) {
-    msg.textContent = "❌ Invalid username or password!";
-    return;
-  }
-  currentUser = u;
-  msg.textContent = "✅ Welcome back, " + u + "!";
-  authScreen.style.display = "none";
-  document.getElementById("hud").style.display = "block";
-  startGame(u);
-};
-
-// ======================
-// Game Logic
-// ======================
-let money=0,blockScroll=1,block=10,level=1,xp=0;
+let save=JSON.parse(localStorage.getItem("moneyScrollSave"))||{money:0,scroll:1,block:10,level:1,xp:0};
+let {money,scroll:blockScroll,block,level,xp}=save;
 let upBC=100,upSC=150,worldY=0,bgY=0,auto=false;
-
 const world=document.getElementById("world"),ding=document.getElementById("ding");
 const mD=document.getElementById("money"),lD=document.getElementById("level"),
 sD=document.getElementById("scrollIncome"),bD=document.getElementById("blockValue"),xpF=document.getElementById("xpFill");
@@ -117,6 +62,8 @@ const autoBtn=document.getElementById("autoScrollBtn");
 function xpNeed(){return 100*Math.pow(1.6,level-1);}
 function upd(){mD.textContent=Math.floor(money);lD.textContent=level;sD.textContent=blockScroll;bD.textContent=block;xpF.style.width=(xp/xpNeed()*100)+"%";}
 function sound(){ding.currentTime=0;ding.play().catch(()=>{});}
+function saveG(){localStorage.setItem("moneyScrollSave",JSON.stringify({money,scroll:blockScroll,block,level,xp}));}
+setInterval(saveG,2000);
 function float(x,y,t,color="#00ff88"){let f=document.createElement("div");f.className="float";f.style.left=x+"px";f.style.top=y+"px";f.style.color=color;f.textContent=t;document.body.appendChild(f);setTimeout(()=>f.remove(),1000);}
 function addXP(a){xp+=a;if(xp>=xpNeed()){xp-=xpNeed();level++;sound();}}
 
@@ -150,7 +97,6 @@ function spawnBlock(){
       b.remove();
     }else{
       money+=block;
-      addXP(block*0.05);
       float(e.clientX,e.clientY,"+"+block);
       sound();
       b.remove();
@@ -161,13 +107,13 @@ function spawnBlock(){
 }
 
 // upgrades
-document.getElementById("upB").onclick=(e)=>{
+document.getElementById("upB").onclick=()=>{
   if(money>=upBC){money-=upBC;block=Math.round(block*1.7);upBC=Math.round(upBC*2.2);
-    e.target.textContent=`Upgrade Block 💎 (${upBC})`;sound();upd();}
+    event.target.textContent=`Upgrade Block 💎 (${upBC})`;sound();upd();}
 };
-document.getElementById("upS").onclick=(e)=>{
+document.getElementById("upS").onclick=()=>{
   if(money>=upSC){money-=upSC;blockScroll=Math.round(blockScroll*1.8);upSC=Math.round(upSC*2.4);
-    e.target.textContent=`Upgrade Scroll 🚀 (${upSC})`;sound();upd();}
+    event.target.textContent=`Upgrade Scroll 🚀 (${upSC})`;sound();upd();}
 };
 
 // Auto scroll system
@@ -181,6 +127,7 @@ setInterval(()=>{
     const delta=8; // slow scroll speed
     worldY+=delta*0.5;bgY+=delta*0.5;
     world.style.transform=`translateY(${-worldY}px)`;document.body.style.backgroundPosition=`0px ${bgY}px`;
+    // earn only 12% of normal, no XP
     const earn=delta*blockScroll*0.05*0.12;
     money+=earn;
     if(Math.random()<0.03)spawnBlock();
@@ -188,18 +135,7 @@ setInterval(()=>{
   }
 },100);
 
-// ======================
-// Start Game + Save Loop
-// ======================
-function startGame(username){
-  let save = users[username].save || {money:0,scroll:1,block:10,level:1,xp:0};
-  money=save.money;blockScroll=save.scroll;block=save.block;level=save.level;xp=save.xp;
-  upd();
-  setInterval(()=>{
-    users[username].save={money,scroll:blockScroll,block,level,xp};
-    localStorage.setItem("moneyScrollUsers",JSON.stringify(users));
-  },2000);
-}
+upd();
 </script>
 </body>
 </html>
