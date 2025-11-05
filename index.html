@@ -1,31 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<script type="module">
-  // Firebase SDKs
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
-
-  // === Replace with your own config ===
-  const firebaseConfig = {
-    apiKey: "AIzaSyDj5-jNLG4Ampuc56ygFA8kXScbuVFctBk",
-    authDomain: "scroll-3f622.firebaseapp.com",
-    projectId: "scroll-3f622",
-    storageBucket: "scroll-3f622.firebasestorage.app",
-    messagingSenderId: "1012742622451",
-    appId: "1:1012742622451:web:e217b4a775975911d93b86"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  // Now you can use auth + db in your main game script
-  window.firebaseAuth = auth;
-  window.firebaseDB = db;
-  window.firebaseFns = {createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, doc, getDoc, setDoc};
-</script>
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,10 +35,53 @@
     animation:float 1s ease-out forwards;text-shadow:0 0 10px #00ff88;
   }
   @keyframes float{to{transform:translateY(-50px);opacity:0;}}
+  /* Login screen styles */
+  #authScreen{
+    position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;z-index:2000;color:white;
+  }
+  #authScreen input{margin:4px;padding:6px 10px;border-radius:6px;border:none;font-size:1em;}
 </style>
+
+<!-- Firebase Setup -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
+
+  // 🔹 Replace with your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDj5-jNLG4Ampuc56ygFA8kXScbuVFctBk",
+    authDomain: "scroll-3f622.firebaseapp.com",
+    projectId: "scroll-3f622",
+    storageBucket: "scroll-3f622.firebasestorage.app",
+    messagingSenderId: "1012742622451",
+    appId: "1:1012742622451:web:e217b4a775975911d93b86"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window.firebaseAuth = auth;
+  window.firebaseDB = db;
+  window.firebaseFns = { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, doc, getDoc, setDoc };
+</script>
 </head>
 <body>
-<div id="hud">
+
+<!-- Login/Register Screen -->
+<div id="authScreen">
+  <h2>💸 Scroll for Money</h2>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button id="registerBtn">Create Account</button>
+  <button id="loginBtn">Login</button>
+  <p id="authMsg" style="margin-top:10px;color:#00ff88;"></p>
+</div>
+
+<!-- Game HUD -->
+<div id="hud" style="display:none;">
   💰 <span id="money">0</span><br>
   ⭐ Level: <span id="level">1</span>
   <div id="xpBar"><div id="xpFill"></div></div>
@@ -74,37 +91,52 @@
   <button id="upS">Upgrade Scroll 🚀 (150)</button>
   <button id="autoScrollBtn">🌀 Auto Scroll: OFF</button>
 </div>
+
 <div id="world"></div>
 <audio id="ding" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+
 <script>
-let save=JSON.parse(localStorage.getItem("moneyScrollSave"))||{money:0,scroll:1,block:10,level:1,xp:0};
-let {money,scroll:blockScroll,block,level,xp}=save;
-let upBC=100,upSC=150,worldY=0,bgY=0,auto=false;
-const world=document.getElementById("world"),ding=document.getElementById("ding");
-const mD=document.getElementById("money"),lD=document.getElementById("level"),
-sD=document.getElementById("scrollIncome"),bD=document.getElementById("blockValue"),xpF=document.getElementById("xpFill");
+const { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, doc, getDoc, setDoc } = window.firebaseFns;
+const auth = window.firebaseAuth;
+const db = window.firebaseDB;
+
+const authScreen = document.getElementById("authScreen");
+const msg = document.getElementById("authMsg");
+
+document.getElementById("registerBtn").onclick = async () => {
+  const u = username.value.trim(), p = password.value;
+  if (!u || !p) return msg.textContent = "Please fill in both fields.";
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, u + "@scrollgame.com", p);
+    await setDoc(doc(db, "saves", userCred.user.uid), { money:0, scroll:1, block:10, level:1, xp:0 });
+    msg.textContent = "✅ Account created! You can now log in.";
+  } catch (err) {
+    msg.textContent = "⚠️ " + err.message;
+  }
+};
+
+document.getElementById("loginBtn").onclick = async () => {
+  const u = username.value.trim(), p = password.value;
+  try {
+    await signInWithEmailAndPassword(auth, u + "@scrollgame.com", p);
+  } catch (err) {
+    msg.textContent = "⚠️ " + err.message;
+  }
+};
+
+let money=0, blockScroll=1, block=10, level=1, xp=0;
+let upBC=100, upSC=150, worldY=0, bgY=0, auto=false;
+
+const world=document.getElementById("world"), ding=document.getElementById("ding");
+const mD=document.getElementById("money"), lD=document.getElementById("level"),
+      sD=document.getElementById("scrollIncome"), bD=document.getElementById("blockValue"), xpF=document.getElementById("xpFill");
 const autoBtn=document.getElementById("autoScrollBtn");
 
 function xpNeed(){return 100*Math.pow(1.6,level-1);}
 function upd(){mD.textContent=Math.floor(money);lD.textContent=level;sD.textContent=blockScroll;bD.textContent=block;xpF.style.width=(xp/xpNeed()*100)+"%";}
 function sound(){ding.currentTime=0;ding.play().catch(()=>{});}
-function saveG(){localStorage.setItem("moneyScrollSave",JSON.stringify({money,scroll:blockScroll,block,level,xp}));}
-setInterval(saveG,2000);
 function float(x,y,t,color="#00ff88"){let f=document.createElement("div");f.className="float";f.style.left=x+"px";f.style.top=y+"px";f.style.color=color;f.textContent=t;document.body.appendChild(f);setTimeout(()=>f.remove(),1000);}
 function addXP(a){xp+=a;if(xp>=xpNeed()){xp-=xpNeed();level++;sound();}}
-
-window.addEventListener("wheel",e=>{
-  const delta=e.deltaY;
-  worldY+=delta*0.5;bgY+=delta*0.5;
-  world.style.transform=`translateY(${-worldY}px)`;document.body.style.backgroundPosition=`0px ${bgY}px`;
-  if(delta>0){ // only earn when scrolling down
-    const earn=delta*blockScroll*0.05;
-    money+=earn;
-    addXP(delta*0.02);
-    if(Math.random()<0.06)spawnBlock();
-  }
-  upd();
-});
 
 function spawnBlock(){
   const b=document.createElement("div");b.className="money-block";
@@ -132,7 +164,7 @@ function spawnBlock(){
   setTimeout(()=>b.remove(),8000);
 }
 
-// upgrades
+// Upgrades
 document.getElementById("upB").onclick=()=>{
   if(money>=upBC){money-=upBC;block=Math.round(block*1.7);upBC=Math.round(upBC*2.2);
     event.target.textContent=`Upgrade Block 💎 (${upBC})`;sound();upd();}
@@ -142,24 +174,51 @@ document.getElementById("upS").onclick=()=>{
     event.target.textContent=`Upgrade Scroll 🚀 (${upSC})`;sound();upd();}
 };
 
-// Auto scroll system
 autoBtn.onclick=()=>{
   auto=!auto;
   autoBtn.textContent=auto?"🌀 Auto Scroll: ON":"🌀 Auto Scroll: OFF";
 };
 
+// Scroll event
+window.addEventListener("wheel",e=>{
+  const delta=e.deltaY;
+  worldY+=delta*0.5;bgY+=delta*0.5;
+  world.style.transform=`translateY(${-worldY}px)`;document.body.style.backgroundPosition=`0px ${bgY}px`;
+  if(delta>0){
+    const earn=delta*blockScroll*0.05;
+    money+=earn;
+    addXP(delta*0.02);
+    if(Math.random()<0.06)spawnBlock();
+  }
+  upd();
+});
+
+// Auto scroll
 setInterval(()=>{
   if(auto){
-    const delta=8; // slow scroll speed
+    const delta=8;
     worldY+=delta*0.5;bgY+=delta*0.5;
     world.style.transform=`translateY(${-worldY}px)`;document.body.style.backgroundPosition=`0px ${bgY}px`;
-    // earn only 12% of normal, no XP
     const earn=delta*blockScroll*0.05*0.12;
     money+=earn;
     if(Math.random()<0.03)spawnBlock();
     upd();
   }
 },100);
+
+// Firebase save/load
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    authScreen.style.display="none";
+    document.getElementById("hud").style.display="block";
+    const ref = doc(db, "saves", user.uid);
+    const snap = await getDoc(ref);
+    let data = snap.exists()? snap.data() : {money:0,scroll:1,block:10,level:1,xp:0};
+    money=data.money; blockScroll=data.scroll; block=data.block; level=data.level; xp=data.xp;
+    upd();
+    setInterval(async()=>{ await setDoc(ref, {money,scroll:blockScroll,block,level,xp}); },2000);
+  }
+});
 
 upd();
 </script>
