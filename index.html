@@ -1,51 +1,32 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Scroll for Money — Online</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Scroll for Money — Online (Global Events)</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --accent:#00ff88; --bg1:linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966);
-    --glass: rgba(12,12,16,.6);
-    --glass-2: rgba(255,255,255,.06);
-  }
+  :root{--accent:#00ff88}
   html,body{height:100%;margin:0;font-family:Poppins,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:#fff;overflow:hidden}
-  body{background:var(--bg1);background-size:100% 1400%;transition:background-position .12s linear}
-  #world{position:absolute;inset:0;overflow:hidden;transform:translateZ(0);pointer-events:none}
+  body{background:linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966);background-size:100% 1400%;transition:background-position .12s linear}
+  #world{position:absolute;inset:0;pointer-events:none}
   .money-block{position:absolute;pointer-events:auto;font-size:42px;padding:8px 12px;border-radius:10px;border:3px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));cursor:pointer;user-select:none;transition:transform .12s,opacity .2s}
   .money-block:hover{transform:scale(1.15)}
-  #hud{
-    position:fixed;left:12px;top:12px;width:300px;background:var(--glass);border-radius:12px;padding:12px;backdrop-filter: blur(6px);
-    box-shadow:0 6px 24px rgba(0,0,0,.5);z-index:1000;border:1px solid rgba(255,255,255,.06)
-  }
-  #hud h1{margin:0;font-size:18px;letter-spacing:.6px}
+  #hud{position:fixed;left:12px;top:12px;width:320px;background:rgba(8,10,12,.7);border-radius:12px;padding:12px;backdrop-filter:blur(6px);box-shadow:0 6px 24px rgba(0,0,0,.5);z-index:1000;border:1px solid rgba(255,255,255,.04)}
+  #hud h1{margin:0;font-size:18px}
   .stat{display:flex;justify-content:space-between;padding:6px 0;font-weight:600}
   #xpBar{height:10px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden;margin-top:6px}
   #xpFill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#00ccff);transition:width .2s}
-  button,input,select{font-family:inherit}
+  button{font-family:inherit}
   button{background:var(--accent);color:#021;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700;margin-top:8px}
   button.ghost{background:transparent;border:1px solid rgba(255,255,255,.08);color:#fff}
   #loginScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:2500}
-  .card{width:360px;padding:18px;border-radius:14px;background:rgba(2,6,12,.9);box-shadow:0 10px 40px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.04)}
+  .card{width:380px;padding:18px;border-radius:14px;background:rgba(2,6,12,.95);box-shadow:0 10px 40px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.04)}
   .card input{width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:transparent;color:#fff}
-  #topPlayers{margin-top:12px;font-size:14px}
-  #controls{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-  #centerHUD{position:fixed;right:12px;top:12px;width:320px;background:var(--glass);padding:12px;border-radius:12px;z-index:1000;border:1px solid rgba(255,255,255,.04)}
-  .small{font-size:13px;opacity:.9}
   .float{position:fixed;font-weight:800;pointer-events:none;opacity:1;transform:translateY(0);animation:floatUp .9s ease-out forwards;text-shadow:0 0 12px rgba(0,255,136,.6)}
   @keyframes floatUp{to{transform:translateY(-50px);opacity:0}}
-  .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.03);font-weight:700}
   .eventBanner{position:fixed;left:50%;transform:translateX(-50%);top:82px;background:linear-gradient(90deg,#ffd54d,#ff8a65);padding:8px 14px;border-radius:999px;color:#111;font-weight:900;z-index:1500;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-  #leaderboard{margin-top:10px;background:var(--glass-2);padding:8px;border-radius:8px;max-height:170px;overflow:auto}
-  .row{display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px dashed rgba(255,255,255,.03)}
-  .smallButton{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,.06);cursor:pointer;color:#fff}
-  /* mobile adjustments */
-  @media (max-width:700px){
-    #hud{width:92%;left:4%;top:8px}
-    #centerHUD{display:none}
-  }
+  .small{font-size:13px;opacity:.9}
 </style>
 </head>
 <body>
@@ -61,7 +42,7 @@
       <button id="guestBtn" class="ghost">Play Guest</button>
     </div>
     <div id="loginMsg" class="small" style="margin-top:8px;color:#ffa">Tip: use any email + password</div>
-    <div id="topPlayers" class="small"></div>
+    <div id="topPlayers" class="small" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -73,38 +54,25 @@
   <div class="stat small"><span>Scroll Income</span><span id="scrollIncome">1</span></div>
   <div class="stat small"><span>Block Value</span><span id="blockValue">10</span></div>
 
-  <div id="controls">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
     <button id="upBlock">Upgrade Block (100)</button>
     <button id="upScroll" class="ghost">Upgrade Scroll (150)</button>
     <button id="autoScrollBtn" class="ghost">Auto: OFF</button>
-    <button id="prestigeBtn" class="ghost">Rebirth (Prestige)</button>
+    <button id="prestigeBtn" class="ghost">Rebirth</button>
+  </div>
+
+  <div style="margin-top:10px" class="small">Global Event: <span id="globalEventStatus">none</span></div>
+  <div style="margin-top:8px" class="small">Global Mult: <span id="globalMult">x1</span></div>
+  <div style="margin-top:8px">
     <button id="dailyBtn" class="ghost">Daily Bonus</button>
     <button id="logoutBtn" class="ghost">Logout</button>
   </div>
 
-  <div id="skins" style="margin-top:8px" class="small">
-    Skins:
-    <button id="bgSkin1" class="smallButton">Default</button>
-    <button id="bgSkin2" class="smallButton">Neon (Lvl4)</button>
-  </div>
-
-  <div id="saveStatus" class="small" style="margin-top:8px;opacity:.8">Saved</div>
-</div>
-
-<div id="centerHUD" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <div><strong id="displayName">Player</strong><div class="small" id="emailLabel"></div></div>
-    <div><span class="badge" id="prestigeMult">x1</span></div>
-  </div>
-
-  <div id="leaderboard">
-    <div style="font-weight:800;margin-bottom:6px">Leaderboard</div>
-    <div id="leadersList" class="small"></div>
-    <div style="margin-top:6px"><button id="updateProfile" class="smallButton">Set Display Name</button></div>
-  </div>
-
-  <div style="margin-top:12px" class="small">
-    Events: <span id="eventStatus">none</span>
+  <div id="adminControls" style="margin-top:10px;display:none" class="small">
+    <div style="margin-bottom:6px;font-weight:700">Admin</div>
+    <button id="startEventBtn" class="ghost">Start Global Gold Rush</button>
+    <button id="endEventBtn" class="ghost">End Global Event</button>
+    <div class="small" style="margin-top:6px">You can also trigger/manage the `global/event` doc in Firestore console.</div>
   </div>
 </div>
 
@@ -134,10 +102,11 @@
     getDocs,
     serverTimestamp,
     updateDoc,
-    increment
+    increment,
+    onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
-  // Firebase config (keep as-is for demo). Replace with your own project if desired.
+  // Firebase config (demo) - replace with your own if you want
   const firebaseConfig = {
     apiKey: "AIzaSyDj5-jNLG4Ampuc56ygFA8kXScbuVFctBk",
     authDomain: "scroll-3f622.firebaseapp.com",
@@ -153,30 +122,23 @@
   // DOM
   const loginScreen = document.getElementById('loginScreen');
   const hud = document.getElementById('hud');
-  const centerHUD = document.getElementById('centerHUD');
   const world = document.getElementById('world');
   const moneyEl = document.getElementById('money');
   const levelEl = document.getElementById('level');
   const xpFill = document.getElementById('xpFill');
   const scrollIncomeEl = document.getElementById('scrollIncome');
   const blockValueEl = document.getElementById('blockValue');
-  const loginMsg = document.getElementById('loginMsg');
-  const leadersList = document.getElementById('leadersList');
-  const eventStatus = document.getElementById('eventStatus');
-  const prestigeMultEl = document.getElementById('prestigeMult');
-  const displayNameEl = document.getElementById('displayName');
-  const emailLabel = document.getElementById('emailLabel');
-  const saveStatus = document.getElementById('saveStatus');
+  const globalEventStatus = document.getElementById('globalEventStatus');
+  const globalMultEl = document.getElementById('globalMult');
+  const adminControls = document.getElementById('adminControls');
 
-  const ding = document.getElementById('ding'), cash = document.getElementById('cash');
-
-  // inputs/buttons
   const emailI = document.getElementById('email'), passI = document.getElementById('password');
   const loginBtn = document.getElementById('loginBtn'), registerBtn = document.getElementById('registerBtn'), guestBtn = document.getElementById('guestBtn');
   const upBlock = document.getElementById('upBlock'), upScroll = document.getElementById('upScroll'), autoBtn = document.getElementById('autoScrollBtn');
   const prestigeBtn = document.getElementById('prestigeBtn'), dailyBtn = document.getElementById('dailyBtn'), logoutBtn = document.getElementById('logoutBtn');
-  const bgSkin1 = document.getElementById('bgSkin1'), bgSkin2 = document.getElementById('bgSkin2');
-  const updateProfileBtn = document.getElementById('updateProfile');
+  const startEventBtn = document.getElementById('startEventBtn'), endEventBtn = document.getElementById('endEventBtn');
+
+  const ding = document.getElementById('ding'), cash = document.getElementById('cash');
 
   // state
   let money = 0, block = 10, blockScroll = 1, level = 1, xp = 0;
@@ -187,6 +149,10 @@
   let userId = null, userEmail = '', displayName = 'Player';
   let lastSave = Date.now();
 
+  // global event state (shared)
+  let globalEvent = null; // { type, endsAtMs, multiplier, startedBy }
+  let globalMultiplier = 1.0;
+
   function xpNeed(){ return Math.round(100 * Math.pow(1.6, level-1)); }
   function updateUI(){
     moneyEl.textContent = '£' + Math.floor(money).toLocaleString();
@@ -194,13 +160,12 @@
     xpFill.style.width = Math.min(100, xp / xpNeed() * 100) + '%';
     scrollIncomeEl.textContent = blockScroll;
     blockValueEl.textContent = block;
+    globalEventStatus.textContent = globalEvent ? `${globalEvent.type} (ends ${new Date(globalEvent.endsAtMs).toLocaleTimeString()})` : 'none';
+    globalMultEl.textContent = 'x' + roundTo(globalMultiplier,2);
     document.getElementById('upBlock').textContent = `Upgrade Block (${upBC.toLocaleString()})`;
     document.getElementById('upScroll').textContent = `Upgrade Scroll (${upSC.toLocaleString()})`;
-    prestigeMultEl.textContent = 'x' + prestigeMultiplier;
-    displayNameEl.textContent = displayName || 'Player';
-    emailLabel.textContent = userEmail || '';
-    saveStatus.textContent = (Date.now() - lastSave < 5000) ? 'Saved' : 'Saving...';
   }
+  function roundTo(v,d){ return Math.round(v * (10**d)) / (10**d); }
 
   function playSound(node){ try{ node.currentTime = 0; node.play(); }catch(e){} }
   function floatText(x,y,t,color='var(--accent)'){ const el = document.createElement('div'); el.className='float'; el.style.left = x+'px'; el.style.top = y+'px'; el.style.color = color; el.textContent = t; document.body.appendChild(el); setTimeout(()=>el.remove(),900); }
@@ -208,32 +173,26 @@
   function addXP(a){
     xp += a;
     while(xp >= xpNeed()){
-      xp -= xpNeed(); level++; playSound(ding); // level up
+      xp -= xpNeed(); level++; playSound(ding);
     }
     updateUI();
   }
 
-  // save & load
+  // save/load
   async function saveGame(){
-    lastSave = Date.now(); updateUI();
     if(!userId) return;
-    const docRef = doc(db, 'users', userId);
     try{
-      await setDoc(docRef, {
-        money, block, blockScroll, level, xp, currentBG, currentBlock, prestigePoints, prestigeMultiplier,
-        lastUpdated: serverTimestamp(), displayName
+      await setDoc(doc(db,'users',userId), {
+        money, block, blockScroll, level, xp, currentBG, currentBlock, prestigePoints, prestigeMultiplier, displayName,
+        lastUpdated: serverTimestamp()
       }, { merge: true });
-      // update leaderboard entry
-      const lbRef = doc(db, 'leaderboard', userId);
-      await setDoc(lbRef, { uid: userId, displayName, money, updated: serverTimestamp() }, { merge: true });
-      lastSave = Date.now();
-      updateUI();
-    }catch(e){ console.error('save error', e); }
+    }catch(e){ console.error('save failed',e); }
+    lastSave = Date.now(); updateUI();
   }
 
   async function loadGame(uid){
     if(!uid) return;
-    const snap = await getDoc(doc(db, 'users', uid));
+    const snap = await getDoc(doc(db,'users',uid));
     const d = snap.data() || {};
     money = d.money ?? 0;
     block = d.block ?? 10;
@@ -244,89 +203,79 @@
     currentBlock = d.currentBlock ?? 'block1';
     prestigePoints = d.prestigePoints ?? 0;
     prestigeMultiplier = d.prestigeMultiplier ?? 1;
-    displayName = d.displayName ?? (userEmail.split('@')[0]);
+    displayName = d.displayName ?? (userEmail.split('@')[0] || 'Player');
     applyBg();
     updateUI();
+    if(d.isAdmin) adminControls.style.display = 'block'; else adminControls.style.display = 'none';
   }
 
-  // leaderboard display
-  async function refreshLeaderboard(){
+  function applyBg(){ if(currentBG==='bg1') document.body.style.background = 'linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966)'; else document.body.style.background = 'linear-gradient(45deg,#ff00ff,#00ffff,#ffff00,#ff6600)'; }
+
+  // leaderboard preview (small)
+  async function showTopOnLogin(){
     try{
-      const q = query(collection(db, 'leaderboard'), orderBy('money','desc'), limit(6));
+      const q = query(collection(db,'leaderboard'), orderBy('money','desc'), limit(5));
       const snaps = await getDocs(q);
-      leadersList.innerHTML = '';
-      let rank = 1;
-      for(const s of snaps.docs){
-        const data = s.data();
-        const row = document.createElement('div'); row.className='row';
-        row.innerHTML = `<div>#${rank} ${escapeHtml(data.displayName||'Anon')}</div><div>£${Math.floor(data.money||0).toLocaleString()}</div>`;
-        leadersList.appendChild(row); rank++;
-      }
-    }catch(e){ console.error(e); }
+      const top = [];
+      let r=1;
+      snaps.forEach(s=> top.push(`#${r++} ${escapeHtml(s.data().displayName||'Anon')} — £${Math.floor(s.data().money||0).toLocaleString()}`));
+      document.getElementById('topPlayers').innerHTML = '<b>Top players</b><br>' + (top.length ? top.join('<br>') : 'no data yet');
+    }catch(e){}
   }
+  showTopOnLogin();
 
-  // helper
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
 
-  // login/register/guest
-  loginBtn.onclick = async ()=>{ try{ await signInWithEmailAndPassword(auth, emailI.value, passI.value); }catch(e){ loginMsg.textContent = 'Login failed: ' + e.message; } };
+  // auth handlers
+  loginBtn.onclick = async ()=>{ try{ await signInWithEmailAndPassword(auth, emailI.value, passI.value); }catch(e){ document.getElementById('loginMsg').textContent = 'Login failed: '+e.message; } };
   registerBtn.onclick = async ()=>{ try{
     const cred = await createUserWithEmailAndPassword(auth, emailI.value, passI.value);
     const uid = cred.user.uid;
     await setDoc(doc(db,'users', uid), { money:0, blockScroll:1, block:10, level:1, xp:0, currentBG:'bg1', currentBlock:'block1', displayName: emailI.value.split('@')[0] });
-  }catch(e){ loginMsg.textContent = 'Register failed: ' + e.message; } };
-  guestBtn.onclick = ()=>{ userId = null; userEmail = ''; displayName = 'Guest'; loginScreen.style.display='none'; hud.style.display='block'; centerHUD.style.display='block'; spawnTickLoop(); refreshLeaderboard(); updateUI(); };
+  }catch(e){ document.getElementById('loginMsg').textContent = 'Register failed: '+e.message; } };
+  guestBtn.onclick = ()=>{ userId = null; userEmail = ''; displayName = 'Guest'; loginScreen.style.display='none'; hud.style.display='block'; spawnTickLoop(); updateUI(); };
 
   logoutBtn.onclick = async ()=>{ await signOut(auth); location.reload(); };
 
-  updateProfileBtn.onclick = async ()=>{
-    const name = prompt('Enter display name (max 20 chars):', displayName || '');
-    if(!name) return;
-    displayName = name.slice(0,20);
-    if(auth.currentUser){
-      try{ await updateProfile(auth.currentUser, { displayName }); }catch(e){}
-      await saveGame();
-      refreshLeaderboard();
-    }
-    updateUI();
-  };
-
-  // on auth
   onAuthStateChanged(auth, async (u)=>{
     if(u){
       userId = u.uid; userEmail = u.email || '';
       loginScreen.style.display = 'none';
       hud.style.display = 'block';
-      centerHUD.style.display = 'block';
-      displayName = u.displayName || (userEmail.split('@')[0]);
+      displayName = u.displayName || (userEmail.split('@')[0] || 'Player');
       await loadGame(userId);
-      refreshLeaderboard();
+      setupGlobalEventListener();
       spawnTickLoop();
-      saveGame(); // immediate save
+      saveGame();
     }else{
-      // show login
       loginScreen.style.display = 'flex';
       hud.style.display = 'none';
-      centerHUD.style.display = 'none';
-      refreshLeaderboard();
+      setupGlobalEventListener(); // still listen to events even when logged out (optional)
+      spawnTickLoop();
     }
   });
 
-  // scroll earning + world movement
+  // earnings (apply global multiplier)
+  function computeEarnFromDelta(delta){
+    const baseEarn = (delta * 0.05) * blockScroll * prestigeMultiplier;
+    return baseEarn * globalMultiplier;
+  }
+
+  // scroll handling
   window.addEventListener('wheel', e=>{
     const delta = e.deltaY;
     worldY += delta * 0.5; bgY += delta * 0.6;
-    world.style.transform = `translateY(${ -worldY }px)`;
+    world.style.transform = `translateY(${-worldY}px)`;
     document.body.style.backgroundPosition = `0px ${bgY}px`;
-    if(delta>0){
-      const earn = (delta * 0.05) * blockScroll * prestigeMultiplier;
+    if(delta > 0){
+      const earn = computeEarnFromDelta(delta);
       money += earn;
       addXP(Math.abs(delta) * 0.02);
       if(Math.random() < 0.06) spawnBlock();
       updateUI();
       if(userId) debounceSave();
     }
-  }, { passive: true });
+  }, { passive:true });
 
   // spawn money blocks
   function spawnBlock(){
@@ -346,8 +295,9 @@
         floatText(ev.clientX, ev.clientY, `-${loss} LVL`, 'red');
         b.remove();
       }else{
-        money += block * prestigeMultiplier;
-        floatText(ev.clientX, ev.clientY, `+£${block * prestigeMultiplier}`);
+        const gained = block * prestigeMultiplier * globalMultiplier;
+        money += gained;
+        floatText(ev.clientX, ev.clientY, `+£${Math.floor(gained)}`);
         playSound(cash);
         b.remove();
       }
@@ -362,21 +312,13 @@
 
   // auto scroll
   autoBtn.onclick = ()=>{ auto = !auto; autoBtn.textContent = auto ? 'Auto: ON' : 'Auto: OFF'; };
+  setInterval(()=>{ if(auto){ const delta = 10; worldY += delta * 0.5; bgY += delta * 0.4; world.style.transform = `translateY(${-worldY}px)`; document.body.style.backgroundPosition = `0px ${bgY}px`; const earn = computeEarnFromDelta(delta) * 0.12; money += earn; if(Math.random()<0.03) spawnBlock(); updateUI(); if(userId) debounceSave(); } }, 120);
 
-  setInterval(()=>{ if(auto){ const delta = 10; worldY += delta * 0.5; bgY += delta * 0.4; world.style.transform = `translateY(${-worldY}px)`; document.body.style.backgroundPosition = `0px ${bgY}px`; const earn = delta * 0.05 * blockScroll * prestigeMultiplier * 0.12; money += earn; if(Math.random()<0.03) spawnBlock(); updateUI(); if(userId) debounceSave(); } }, 120);
-
-  // skins
-  function applyBg(){ if(currentBG==='bg1') document.body.style.background = 'linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966)'; else document.body.style.background = 'linear-gradient(45deg,#ff00ff,#00ffff,#ffff00,#ff6600)'; }
-  bgSkin1.onclick = ()=>{ currentBG='bg1'; applyBg(); if(userId) saveGame(); };
-  bgSkin2.onclick = ()=>{ if(level>=4 && money >= 124313){ money -= 124313; currentBG='bg2'; applyBg(); updateUI(); if(userId) debounceSave(); } else alert('Need Level 4 & £124,313'); };
-
-  // prestige (rebirth)
+  // prestige
   prestigeBtn.onclick = ()=> {
     const possible = Math.floor(Math.sqrt(money/10000));
     if(possible <= 0){ if(confirm('Rebirth gives prestige points (increase income). Not enough for 1 point. Rebirth anyway?')) { doPrestige(0); } return; }
-    if(confirm(`Rebirth for ${possible} prestige points? (resets money, level, upgrades)`) ){
-      doPrestige(possible);
-    }
+    if(confirm(`Rebirth for ${possible} prestige points? (resets money, level, upgrades)`)) doPrestige(possible);
   };
   function doPrestige(points){
     prestigePoints += points;
@@ -385,36 +327,94 @@
     playSound(ding); updateUI(); if(userId) saveGame();
   }
 
-  // daily bonus
+  // daily
   dailyBtn.onclick = async ()=>{
     if(!userId){ alert('Login to claim daily bonus'); return; }
-    const snap = await getDoc(doc(db, 'users', userId));
+    const snap = await getDoc(doc(db,'users',userId));
     const lastClaim = snap.data()?.lastDaily || '';
     const today = new Date().toDateString();
     if(lastClaim === today){ alert('Already claimed today'); return; }
-    money += 5000 * prestigeMultiplier;
-    await setDoc(doc(db,'users',userId), { lastDaily: today, money }, { merge: true });
-    alert('Daily claimed: £' + Math.floor(5000*prestigeMultiplier));
+    const bonus = 5000 * prestigeMultiplier * globalMultiplier;
+    money += bonus;
+    await setDoc(doc(db,'users',userId), { lastDaily: today, money }, { merge:true });
+    alert('Daily claimed: £' + Math.floor(bonus));
     updateUI();
   };
 
-  // random "gold rush" events
-  let eventActive = false;
-  function maybeTriggerEvent(){
-    if(eventActive) return;
-    if(Math.random() < 0.008){ goldRush(); }
-  }
-  function goldRush(){
-    eventActive = true; eventStatus.textContent = 'GOLD RUSH! x2 income';
-    const banner = document.createElement('div'); banner.className='eventBanner'; banner.textContent='GOLD RUSH: Double income for 10s!';
-    document.body.appendChild(banner);
-    prestigeMultiplier *= 2;
-    setTimeout(()=>{ prestigeMultiplier /= 2; eventActive = false; eventStatus.textContent = 'none'; banner.remove(); updateUI(); }, 10000);
-    setTimeout(()=>updateUI(),20);
-  }
-  setInterval(maybeTriggerEvent, 2000);
+  // ---------------------------
+  // GLOBAL EVENT (shared) logic
+  // ---------------------------
+  const globalEventRef = doc(db, 'global', 'event');
 
-  // spawn tick loop ensures some blocks spawn even without user actions
+  // listens for changes to the global event doc in real time
+  let unsubGlobal = null;
+  function setupGlobalEventListener(){
+    if(unsubGlobal) return; // one listener only
+    unsubGlobal = onSnapshot(globalEventRef, (snap) => {
+      const d = snap.exists() ? snap.data() : null;
+      if(!d || !d.type || !d.endsAtMs || Date.now() > d.endsAtMs){
+        // no active event or expired
+        globalEvent = null;
+        globalMultiplier = 1.0;
+        removeEventBanner();
+      } else {
+        globalEvent = { type: d.type, endsAtMs: d.endsAtMs, multiplier: d.multiplier ?? 2, startedBy: d.startedBy ?? null };
+        // ensure multiplier is rounded to 2 decimals for display and use
+        globalMultiplier = roundTo(Number(globalEvent.multiplier) || 1.0, 2);
+        showEventBanner(globalEvent.type);
+      }
+      updateUI();
+    }, (err)=>{ console.error('global event listener err', err); });
+  }
+
+  function showEventBanner(type){
+    removeEventBanner();
+    const banner = document.createElement('div'); banner.id = 'eventBanner'; banner.className = 'eventBanner';
+    banner.textContent = `${type.toUpperCase()} ACTIVE — x${globalMultiplier}`;
+    document.body.appendChild(banner);
+  }
+  function removeEventBanner(){ const e=document.getElementById('eventBanner'); if(e) e.remove(); }
+
+  // attempt to auto-start events locally (will only start if doc is empty/expired)
+  async function tryAutoStartEvent(){
+    try{
+      const snap = await getDoc(globalEventRef);
+      const d = snap.exists() ? snap.data() : null;
+      const now = Date.now();
+      if(d && d.endsAtMs && now < d.endsAtMs) return; // already active
+      // small chance to start
+      if(Math.random() < 0.02){ // ~2% per check; you can tune frequency
+        // create event with short lock: check again then set
+        const durationMs = 10_000 + Math.floor(Math.random()*8_000); // 10-18s
+        const multiplier = roundTo(1.8 + Math.random()*1.8, 2); // x1.8 - x3.6
+        const newEvent = { type: 'Gold Rush', endsAtMs: now + durationMs, multiplier, startedBy: userId || 'anon', createdAt: Date.now() };
+        // write to Firestore (will overwrite). The listener will propagate to others.
+        await setDoc(globalEventRef, newEvent, { merge:true });
+        // update local
+        globalEvent = newEvent; globalMultiplier = multiplier;
+      }
+    }catch(e){ console.error('auto start event err', e); }
+  }
+
+  // periodic auto-start attempts (all clients try; first successful sets the doc, others see it)
+  setInterval(()=>{ tryAutoStartEvent(); }, 7000);
+
+  // Admin manual controls (also possible via Firestore console)
+  startEventBtn.onclick = async ()=>{
+    const now = Date.now();
+    const durationMs = 20_000; // 20s
+    const multiplier = 2.0;
+    await setDoc(globalEventRef, { type: 'Gold Rush', endsAtMs: now + durationMs, multiplier, startedBy: userId || 'admin', createdAt: Date.now() }, { merge:true });
+  };
+  endEventBtn.onclick = async ()=>{
+    // set endsAtMs to past to end
+    await setDoc(globalEventRef, { endsAtMs: Date.now() - 1000 }, { merge:true });
+  };
+
+  // ensure we have listener even before login so events show to guests
+  setupGlobalEventListener();
+
+  // spawn tick
   let spawnLoopStarted = false;
   function spawnTickLoop(){
     if(spawnLoopStarted) return;
@@ -424,45 +424,16 @@
 
   // debounce save
   let saveTimer;
-  function debounceSave(){
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(()=> saveGame(), 1200);
-    saveStatus.textContent = 'Saving...';
-  }
+  function debounceSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=> saveGame(), 1200); }
 
-  // periodic leaderboard refresh & autosave
-  setInterval(()=>{ refreshLeaderboard(); if(userId) saveGame(); updateUI(); }, 8000);
-
-  // small helper to show top players on login screen
-  async function showTopOnLogin(){
-    try{
-      const q = query(collection(db, 'leaderboard'), orderBy('money','desc'), limit(5));
-      const snaps = await getDocs(q);
-      const lines = [];
-      let r=1;
-      snaps.forEach(s=> lines.push(`#${r++} ${escapeHtml(s.data().displayName||'Anon')} — £${Math.floor(s.data().money||0).toLocaleString()}`));
-      document.getElementById('topPlayers').innerHTML = '<b>Top players</b><br>' + (lines.length ? lines.join('<br>') : 'no data yet');
-    }catch(e){ console.warn(e); }
-  }
-  showTopOnLogin();
-
-  // sanitize display name on change and update leaderboard name
-  async function setDisplayNameForUser(name){
-    displayName = (name || '').slice(0,20);
-    if(auth.currentUser){
-      try{ await updateProfile(auth.currentUser, { displayName }); }catch(e){}
-      if(userId) await saveGame();
-      refreshLeaderboard();
-    }
-    updateUI();
-  }
+  // periodic autosave
+  setInterval(()=>{ if(userId) saveGame(); updateUI(); }, 8000);
 
   // keyboard: press P to spawn block (debug)
   window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'p') spawnBlock(); });
 
-  // initial UI tick
+  // ensure UI tick runs
   updateUI();
-  refreshLeaderboard();
   spawnTickLoop();
 
 </script>
