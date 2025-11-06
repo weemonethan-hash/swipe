@@ -41,6 +41,7 @@
   #leaderboard{margin-top:10px;background:var(--glass-2);padding:8px;border-radius:8px;max-height:170px;overflow:auto}
   .row{display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px dashed rgba(255,255,255,.03)}
   .smallButton{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,.06);cursor:pointer;color:#fff}
+  /* mobile adjustments */
   @media (max-width:700px){
     #hud{width:92%;left:4%;top:8px}
     #centerHUD{display:none}
@@ -114,14 +115,29 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
   import {
-    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    onAuthStateChanged, signOut, updateProfile
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut,
+    updateProfile
   } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
   import {
-    getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit,
-    getDocs, serverTimestamp
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    collection,
+    query,
+    orderBy,
+    limit,
+    getDocs,
+    serverTimestamp,
+    updateDoc,
+    increment
   } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
+  // Firebase config (keep as-is for demo). Replace with your own project if desired.
   const firebaseConfig = {
     apiKey: "AIzaSyDj5-jNLG4Ampuc56ygFA8kXScbuVFctBk",
     authDomain: "scroll-3f622.firebaseapp.com",
@@ -134,20 +150,321 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // (keep all other logic same as your original)
-  // The only modification is the doPrestige() function below
+  // DOM
+  const loginScreen = document.getElementById('loginScreen');
+  const hud = document.getElementById('hud');
+  const centerHUD = document.getElementById('centerHUD');
+  const world = document.getElementById('world');
+  const moneyEl = document.getElementById('money');
+  const levelEl = document.getElementById('level');
+  const xpFill = document.getElementById('xpFill');
+  const scrollIncomeEl = document.getElementById('scrollIncome');
+  const blockValueEl = document.getElementById('blockValue');
+  const loginMsg = document.getElementById('loginMsg');
+  const leadersList = document.getElementById('leadersList');
+  const eventStatus = document.getElementById('eventStatus');
+  const prestigeMultEl = document.getElementById('prestigeMult');
+  const displayNameEl = document.getElementById('displayName');
+  const emailLabel = document.getElementById('emailLabel');
+  const saveStatus = document.getElementById('saveStatus');
 
+  const ding = document.getElementById('ding'), cash = document.getElementById('cash');
+
+  // inputs/buttons
+  const emailI = document.getElementById('email'), passI = document.getElementById('password');
+  const loginBtn = document.getElementById('loginBtn'), registerBtn = document.getElementById('registerBtn'), guestBtn = document.getElementById('guestBtn');
+  const upBlock = document.getElementById('upBlock'), upScroll = document.getElementById('upScroll'), autoBtn = document.getElementById('autoScrollBtn');
+  const prestigeBtn = document.getElementById('prestigeBtn'), dailyBtn = document.getElementById('dailyBtn'), logoutBtn = document.getElementById('logoutBtn');
+  const bgSkin1 = document.getElementById('bgSkin1'), bgSkin2 = document.getElementById('bgSkin2');
+  const updateProfileBtn = document.getElementById('updateProfile');
+
+  // state
+  let money = 0, block = 10, blockScroll = 1, level = 1, xp = 0;
+  let upBC = 100, upSC = 150;
+  let worldY = 0, bgY = 0, auto = false;
+  let currentBG = 'bg1', currentBlock = 'block1';
+  let prestigePoints = 0, prestigeMultiplier = 1;
+  let userId = null, userEmail = '', displayName = 'Player';
+  let lastSave = Date.now();
+
+  function xpNeed(){ return Math.round(100 * Math.pow(1.6, level-1)); }
+  function updateUI(){
+    moneyEl.textContent = '£' + Math.floor(money).toLocaleString();
+    levelEl.textContent = level;
+    xpFill.style.width = Math.min(100, xp / xpNeed() * 100) + '%';
+    scrollIncomeEl.textContent = blockScroll;
+    blockValueEl.textContent = block;
+    document.getElementById('upBlock').textContent = `Upgrade Block (${upBC.toLocaleString()})`;
+    document.getElementById('upScroll').textContent = `Upgrade Scroll (${upSC.toLocaleString()})`;
+    prestigeMultEl.textContent = 'x' + prestigeMultiplier;
+    displayNameEl.textContent = displayName || 'Player';
+    emailLabel.textContent = userEmail || '';
+    saveStatus.textContent = (Date.now() - lastSave < 5000) ? 'Saved' : 'Saving...';
+  }
+
+  function playSound(node){ try{ node.currentTime = 0; node.play(); }catch(e){} }
+  function floatText(x,y,t,color='var(--accent)'){ const el = document.createElement('div'); el.className='float'; el.style.left = x+'px'; el.style.top = y+'px'; el.style.color = color; el.textContent = t; document.body.appendChild(el); setTimeout(()=>el.remove(),900); }
+
+  function addXP(a){
+    xp += a;
+    while(xp >= xpNeed()){
+      xp -= xpNeed(); level++; playSound(ding); // level up
+    }
+    updateUI();
+  }
+
+  // save & load
+  async function saveGame(){
+    lastSave = Date.now(); updateUI();
+    if(!userId) return;
+    const docRef = doc(db, 'users', userId);
+    try{
+      await setDoc(docRef, {
+        money, block, blockScroll, level, xp, currentBG, currentBlock, prestigePoints, prestigeMultiplier,
+        lastUpdated: serverTimestamp(), displayName
+      }, { merge: true });
+      // update leaderboard entry
+      const lbRef = doc(db, 'leaderboard', userId);
+      await setDoc(lbRef, { uid: userId, displayName, money, updated: serverTimestamp() }, { merge: true });
+      lastSave = Date.now();
+      updateUI();
+    }catch(e){ console.error('save error', e); }
+  }
+
+  async function loadGame(uid){
+    if(!uid) return;
+    const snap = await getDoc(doc(db, 'users', uid));
+    const d = snap.data() || {};
+    money = d.money ?? 0;
+    block = d.block ?? 10;
+    blockScroll = d.blockScroll ?? 1;
+    level = d.level ?? 1;
+    xp = d.xp ?? 0;
+    currentBG = d.currentBG ?? 'bg1';
+    currentBlock = d.currentBlock ?? 'block1';
+    prestigePoints = d.prestigePoints ?? 0;
+    prestigeMultiplier = d.prestigeMultiplier ?? 1;
+    displayName = d.displayName ?? (userEmail.split('@')[0]);
+    applyBg();
+    updateUI();
+  }
+
+  // leaderboard display
+  async function refreshLeaderboard(){
+    try{
+      const q = query(collection(db, 'leaderboard'), orderBy('money','desc'), limit(6));
+      const snaps = await getDocs(q);
+      leadersList.innerHTML = '';
+      let rank = 1;
+      for(const s of snaps.docs){
+        const data = s.data();
+        const row = document.createElement('div'); row.className='row';
+        row.innerHTML = `<div>#${rank} ${escapeHtml(data.displayName||'Anon')}</div><div>£${Math.floor(data.money||0).toLocaleString()}</div>`;
+        leadersList.appendChild(row); rank++;
+      }
+    }catch(e){ console.error(e); }
+  }
+
+  // helper
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
+
+  // login/register/guest
+  loginBtn.onclick = async ()=>{ try{ await signInWithEmailAndPassword(auth, emailI.value, passI.value); }catch(e){ loginMsg.textContent = 'Login failed: ' + e.message; } };
+  registerBtn.onclick = async ()=>{ try{
+    const cred = await createUserWithEmailAndPassword(auth, emailI.value, passI.value);
+    const uid = cred.user.uid;
+    await setDoc(doc(db,'users', uid), { money:0, blockScroll:1, block:10, level:1, xp:0, currentBG:'bg1', currentBlock:'block1', displayName: emailI.value.split('@')[0] });
+  }catch(e){ loginMsg.textContent = 'Register failed: ' + e.message; } };
+  guestBtn.onclick = ()=>{ userId = null; userEmail = ''; displayName = 'Guest'; loginScreen.style.display='none'; hud.style.display='block'; centerHUD.style.display='block'; spawnTickLoop(); refreshLeaderboard(); updateUI(); };
+
+  logoutBtn.onclick = async ()=>{ await signOut(auth); location.reload(); };
+
+  updateProfileBtn.onclick = async ()=>{
+    const name = prompt('Enter display name (max 20 chars):', displayName || '');
+    if(!name) return;
+    displayName = name.slice(0,20);
+    if(auth.currentUser){
+      try{ await updateProfile(auth.currentUser, { displayName }); }catch(e){}
+      await saveGame();
+      refreshLeaderboard();
+    }
+    updateUI();
+  };
+
+  // on auth
+  onAuthStateChanged(auth, async (u)=>{
+    if(u){
+      userId = u.uid; userEmail = u.email || '';
+      loginScreen.style.display = 'none';
+      hud.style.display = 'block';
+      centerHUD.style.display = 'block';
+      displayName = u.displayName || (userEmail.split('@')[0]);
+      await loadGame(userId);
+      refreshLeaderboard();
+      spawnTickLoop();
+      saveGame(); // immediate save
+    }else{
+      // show login
+      loginScreen.style.display = 'flex';
+      hud.style.display = 'none';
+      centerHUD.style.display = 'none';
+      refreshLeaderboard();
+    }
+  });
+
+  // scroll earning + world movement
+  window.addEventListener('wheel', e=>{
+    const delta = e.deltaY;
+    worldY += delta * 0.5; bgY += delta * 0.6;
+    world.style.transform = `translateY(${ -worldY }px)`;
+    document.body.style.backgroundPosition = `0px ${bgY}px`;
+    if(delta>0){
+      const earn = (delta * 0.05) * blockScroll * prestigeMultiplier;
+      money += earn;
+      addXP(Math.abs(delta) * 0.02);
+      if(Math.random() < 0.06) spawnBlock();
+      updateUI();
+      if(userId) debounceSave();
+    }
+  }, { passive: true });
+
+  // spawn money blocks
+  function spawnBlock(){
+    const b = document.createElement('div'); b.className = 'money-block';
+    const fake = Math.random() < 0.18;
+    if(fake) b.style.borderColor = 'crimson';
+    b.textContent = fake ? '⚠️' : (currentBlock==='block2' ? '🟨' : '💰');
+    const top = Math.random() * (innerHeight - 120) + 60 + window.scrollY;
+    const left = Math.random() * (innerWidth - 120) + 20;
+    b.style.left = left + 'px';
+    b.style.top = (top + worldY % 200) + 'px';
+    world.appendChild(b);
+    b.addEventListener('click', async (ev)=>{
+      if(fake){
+        const loss = Math.ceil(level*0.5);
+        level = Math.max(1, level - loss); xp = 0;
+        floatText(ev.clientX, ev.clientY, `-${loss} LVL`, 'red');
+        b.remove();
+      }else{
+        money += block * prestigeMultiplier;
+        floatText(ev.clientX, ev.clientY, `+£${block * prestigeMultiplier}`);
+        playSound(cash);
+        b.remove();
+      }
+      updateUI(); if(userId) debounceSave();
+    });
+    setTimeout(()=> { b.style.opacity='0'; setTimeout(()=>b.remove(),300); }, 8000);
+  }
+
+  // upgrades
+  upBlock.onclick = ()=>{ if(money >= upBC){ money -= upBC; block = Math.round(block * 1.7); upBC = Math.round(upBC * 2.2); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
+  upScroll.onclick = ()=>{ if(money >= upSC){ money -= upSC; blockScroll = Math.round(blockScroll * 1.7); upSC = Math.round(upSC * 2.4); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
+
+  // auto scroll
+  autoBtn.onclick = ()=>{ auto = !auto; autoBtn.textContent = auto ? 'Auto: ON' : 'Auto: OFF'; };
+
+  setInterval(()=>{ if(auto){ const delta = 10; worldY += delta * 0.5; bgY += delta * 0.4; world.style.transform = `translateY(${-worldY}px)`; document.body.style.backgroundPosition = `0px ${bgY}px`; const earn = delta * 0.05 * blockScroll * prestigeMultiplier * 0.12; money += earn; if(Math.random()<0.03) spawnBlock(); updateUI(); if(userId) debounceSave(); } }, 120);
+
+  // skins
+  function applyBg(){ if(currentBG==='bg1') document.body.style.background = 'linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966)'; else document.body.style.background = 'linear-gradient(45deg,#ff00ff,#00ffff,#ffff00,#ff6600)'; }
+  bgSkin1.onclick = ()=>{ currentBG='bg1'; applyBg(); if(userId) saveGame(); };
+  bgSkin2.onclick = ()=>{ if(level>=4 && money >= 124313){ money -= 124313; currentBG='bg2'; applyBg(); updateUI(); if(userId) debounceSave(); } else alert('Need Level 4 & £124,313'); };
+
+  // prestige (rebirth)
+  prestigeBtn.onclick = ()=> {
+    const possible = Math.floor(Math.sqrt(money/10000));
+    if(possible <= 0){ if(confirm('Rebirth gives prestige points (increase income). Not enough for 1 point. Rebirth anyway?')) { doPrestige(0); } return; }
+    if(confirm(`Rebirth for ${possible} prestige points? (resets money, level, upgrades)`) ){
+      doPrestige(possible);
+    }
+  };
   function doPrestige(points){
     prestigePoints += points;
-    const maxPoints = Math.floor((20 - 1) / 0.12);
-    if (prestigePoints > maxPoints) prestigePoints = maxPoints;
     prestigeMultiplier = 1 + prestigePoints * 0.12;
-    money = 0; blockScroll = 1; block = 10; level = 1; xp = 0;
-    upBC = 100; upSC = 150;
-    playSound(ding);
-    updateUI();
-    if(userId) saveGame();
+    money = 0; blockScroll = 1; block = 10; level = 1; xp = 0; upBC = 100; upSC = 150;
+    playSound(ding); updateUI(); if(userId) saveGame();
   }
+
+  // daily bonus
+  dailyBtn.onclick = async ()=>{
+    if(!userId){ alert('Login to claim daily bonus'); return; }
+    const snap = await getDoc(doc(db, 'users', userId));
+    const lastClaim = snap.data()?.lastDaily || '';
+    const today = new Date().toDateString();
+    if(lastClaim === today){ alert('Already claimed today'); return; }
+    money += 5000 * prestigeMultiplier;
+    await setDoc(doc(db,'users',userId), { lastDaily: today, money }, { merge: true });
+    alert('Daily claimed: £' + Math.floor(5000*prestigeMultiplier));
+    updateUI();
+  };
+
+  // random "gold rush" events
+  let eventActive = false;
+  function maybeTriggerEvent(){
+    if(eventActive) return;
+    if(Math.random() < 0.008){ goldRush(); }
+  }
+  function goldRush(){
+    eventActive = true; eventStatus.textContent = 'GOLD RUSH! x2 income';
+    const banner = document.createElement('div'); banner.className='eventBanner'; banner.textContent='GOLD RUSH: Double income for 10s!';
+    document.body.appendChild(banner);
+    prestigeMultiplier *= 2;
+    setTimeout(()=>{ prestigeMultiplier /= 2; eventActive = false; eventStatus.textContent = 'none'; banner.remove(); updateUI(); }, 10000);
+    setTimeout(()=>updateUI(),20);
+  }
+  setInterval(maybeTriggerEvent, 2000);
+
+  // spawn tick loop ensures some blocks spawn even without user actions
+  let spawnLoopStarted = false;
+  function spawnTickLoop(){
+    if(spawnLoopStarted) return;
+    spawnLoopStarted = true;
+    setInterval(()=>{ if(Math.random()<0.07) spawnBlock(); }, 1200);
+  }
+
+  // debounce save
+  let saveTimer;
+  function debounceSave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=> saveGame(), 1200);
+    saveStatus.textContent = 'Saving...';
+  }
+
+  // periodic leaderboard refresh & autosave
+  setInterval(()=>{ refreshLeaderboard(); if(userId) saveGame(); updateUI(); }, 8000);
+
+  // small helper to show top players on login screen
+  async function showTopOnLogin(){
+    try{
+      const q = query(collection(db, 'leaderboard'), orderBy('money','desc'), limit(5));
+      const snaps = await getDocs(q);
+      const lines = [];
+      let r=1;
+      snaps.forEach(s=> lines.push(`#${r++} ${escapeHtml(s.data().displayName||'Anon')} — £${Math.floor(s.data().money||0).toLocaleString()}`));
+      document.getElementById('topPlayers').innerHTML = '<b>Top players</b><br>' + (lines.length ? lines.join('<br>') : 'no data yet');
+    }catch(e){ console.warn(e); }
+  }
+  showTopOnLogin();
+
+  // sanitize display name on change and update leaderboard name
+  async function setDisplayNameForUser(name){
+    displayName = (name || '').slice(0,20);
+    if(auth.currentUser){
+      try{ await updateProfile(auth.currentUser, { displayName }); }catch(e){}
+      if(userId) await saveGame();
+      refreshLeaderboard();
+    }
+    updateUI();
+  }
+
+  // keyboard: press P to spawn block (debug)
+  window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'p') spawnBlock(); });
+
+  // initial UI tick
+  updateUI();
+  refreshLeaderboard();
+  spawnTickLoop();
+
 </script>
 </body>
 </html>
