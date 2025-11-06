@@ -379,11 +379,26 @@
     }
   };
   function doPrestige(points){
-    prestigePoints += points;
-    prestigeMultiplier = 1 + prestigePoints * 0.12;
-    money = 0; blockScroll = 1; block = 10; level = 1; xp = 0; upBC = 100; upSC = 150;
-    playSound(ding); updateUI(); if(userId) saveGame();
-  }
+  prestigePoints += points;
+
+  // cap multiplier to 20x
+  const maxPoints = Math.floor((20 - 1) / 0.12);
+  if (prestigePoints > maxPoints) prestigePoints = maxPoints;
+
+  prestigeMultiplier = 1 + prestigePoints * 0.12;
+
+  money = 0;
+  blockScroll = 1;
+  block = 10;
+  level = 1;
+  xp = 0;
+  upBC = 100;
+  upSC = 150;
+
+  playSound(ding);
+  updateUI();
+  if (userId) saveGame();
+}
 
   // daily bonus
   dailyBtn.onclick = async ()=>{
