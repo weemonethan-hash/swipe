@@ -359,6 +359,9 @@
   // upgrades
   upBlock.onclick = ()=>{ if(money >= upBC){ money -= upBC; block = Math.round(block * 1.7); upBC = Math.round(upBC * 2.2); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
   upScroll.onclick = ()=>{ if(money >= upSC){ money -= upSC; blockScroll = Math.round(blockScroll * 1.7); upSC = Math.round(upSC * 2.4); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
+  moneyEl.textContent = '£' + formatNumber(money);
+document.getElementById('upBlock').textContent = `Upgrade Block (${formatNumber(upBC)})`;
+document.getElementById('upScroll').textContent = `Upgrade Scroll (${formatNumber(upSC)})`;
 
   // auto scroll
   autoBtn.onclick = ()=>{ auto = !auto; autoBtn.textContent = auto ? 'Auto: ON' : 'Auto: OFF'; };
@@ -380,10 +383,19 @@
   };
   function doPrestige(points){
     prestigePoints += points;
-    prestigeMultiplier = 1 + prestigePoints * 0.12;
+    prestigeMultiplier = Math.min(1 + prestigePoints * 0.12, 20); // cap at 20x
     money = 0; blockScroll = 1; block = 10; level = 1; xp = 0; upBC = 100; upSC = 150;
     playSound(ding); updateUI(); if(userId) saveGame();
-  }
+}
+
+function formatNumber(n){
+    const abs = Math.abs(n);
+    if(abs >= 1e12) return (n/1e12).toFixed(2)+'T';
+    if(abs >= 1e9) return (n/1e9).toFixed(2)+'B';
+    if(abs >= 1e6) return (n/1e6).toFixed(2)+'M';
+    if(abs >= 1e3) return (n/1e3).toFixed(2)+'K';
+    return n.toFixed(0);
+}
 
   // daily bonus
   dailyBtn.onclick = async ()=>{
