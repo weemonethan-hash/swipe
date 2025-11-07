@@ -49,6 +49,18 @@
 </head>
 <body>
 
+<div id="achievementsMenu" style="position:fixed;left:50%;top:120px;transform:translateX(-50%);width:320px;background:var(--glass);padding:12px;border-radius:12px;z-index:2000;border:1px solid rgba(255,255,255,.04);display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <strong>Achievements</strong>
+    <button id="closeAchievements" class="smallButton">Close</button>
+  </div>
+  <div id="achievementsList" class="small"></div>
+</div>
+
+<button id="openAchievements" class="smallButton" style="position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:2000;">Achievements</button>
+
+
+  
 <div id="loginScreen">
   <div class="card">
     <h1>Scroll for Money — Login / Register</h1>
@@ -215,13 +227,40 @@
   }
 
   // --- ACHIEVEMENTS ---
-  function checkAchievements(){
-    if(!achievements.firstMoney&&money>=100){achievements.firstMoney=true;floatText(innerWidth/2,innerHeight/2,'🏆 First £100!');}
-    if(!achievements.firstUpgrade&&(block>10||blockScroll>1)){achievements.firstUpgrade=true;floatText(innerWidth/2,innerHeight/2,'🏆 First Upgrade!');}
-    if(!achievements.level10&&level>=10){achievements.level10=true;floatText(innerWidth/2,innerHeight/2,'🏆 Level 10!');}
-    if(!achievements.millionaire&&money>=1_000_000){achievements.millionaire=true;floatText(innerWidth/2,innerHeight/2,'💰 Millionaire!');}
-    if(userId)debounceSave();
+function checkAchievements(){
+  if(!achievements.firstMoney && money >= 100){ achievements.firstMoney = true; floatText(innerWidth/2,innerHeight/2,'🏆 First £100!'); }
+  if(!achievements.firstUpgrade && (block > 10 || blockScroll > 1)){ achievements.firstUpgrade = true; floatText(innerWidth/2,innerHeight/2,'🏆 First Upgrade!'); }
+  if(!achievements.level10 && level >= 10){ achievements.level10 = true; floatText(innerWidth/2,innerHeight/2,'🏆 Level 10!'); }
+  if(!achievements.level20 && level >= 20){ achievements.level20 = true; floatText(innerWidth/2,innerHeight/2,'🏆 Level 20!'); }
+  if(!achievements.millionaire && money >= 1_000_000){ achievements.millionaire = true; floatText(innerWidth/2,innerHeight/2,'💰 Millionaire!'); }
+  if(!achievements.block100 && block >= 100){ achievements.block100 = true; floatText(innerWidth/2,innerHeight/2,'🏗️ Block Master!'); }
+  if(!achievements.scroll10 && blockScroll >= 10){ achievements.scroll10 = true; floatText(innerWidth/2,innerHeight/2,'📜 Scroll Expert!'); }
+  if(!achievements.goldRush && eventMultiplier > 1){ achievements.goldRush = true; floatText(innerWidth/2,innerHeight/2,'💎 Gold Rush Activated!'); }
+  if(!achievements.prestige1 && prestigePoints >= 1){ achievements.prestige1 = true; floatText(innerWidth/2,innerHeight/2,'🌟 Prestige Achieved!'); }
+
+  if(userId) debounceSave();
+  updateAchievementsMenu();
+}
+
+function updateAchievementsMenu(){
+  const listEl = document.getElementById('achievementsList');
+  listEl.innerHTML = '';
+  for(const [key, unlocked] of Object.entries(achievements)){
+    let label = key.replace(/([A-Z])/g, ' $1').replace(/\b\w/g, l => l.toUpperCase());
+    listEl.innerHTML += `<div style="padding:4px 0;">${unlocked ? '✅' : '❌'} ${label}</div>`;
   }
+}
+
+
+document.getElementById('openAchievements').onclick = () => {
+  document.getElementById('achievementsMenu').style.display = 'block';
+};
+
+document.getElementById('closeAchievements').onclick = () => {
+  document.getElementById('achievementsMenu').style.display = 'none';
+};
+
+
 
   // --- GAMEPLAY ---
   function spawnBlock(){
