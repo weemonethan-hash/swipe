@@ -41,7 +41,6 @@
   #leaderboard{margin-top:10px;background:var(--glass-2);padding:8px;border-radius:8px;max-height:170px;overflow:auto}
   .row{display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px dashed rgba(255,255,255,.03)}
   .smallButton{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,.06);cursor:pointer;color:#fff}
-  /* mobile adjustments */
   @media (max-width:700px){
     #hud{width:92%;left:4%;top:8px}
     #centerHUD{display:none}
@@ -74,8 +73,8 @@
   <div class="stat small"><span>Block Value</span><span id="blockValue">10</span></div>
 
   <div id="controls">
-    <button id="upBlock">Upgrade Block (100)</button>
-    <button id="upScroll" class="ghost">Upgrade Scroll (150)</button>
+    <button id="upBlock">Upgrade Block (£100)</button>
+    <button id="upScroll" class="ghost">Upgrade Scroll (£150)</button>
     <button id="autoScrollBtn" class="ghost">Auto: OFF</button>
     <button id="prestigeBtn" class="ghost">Rebirth (Prestige)</button>
     <button id="dailyBtn" class="ghost">Daily Bonus</button>
@@ -115,29 +114,13 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
   import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut,
-    updateProfile
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    onAuthStateChanged, signOut, updateProfile
   } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
   import {
-    getFirestore,
-    doc,
-    setDoc,
-    getDoc,
-    collection,
-    query,
-    orderBy,
-    limit,
-    getDocs,
-    serverTimestamp,
-    updateDoc,
-    increment
+    getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
-  // Firebase config (keep as-is for demo). Replace with your own project if desired.
   const firebaseConfig = {
     apiKey: "AIzaSyDj5-jNLG4Ampuc56ygFA8kXScbuVFctBk",
     authDomain: "scroll-3f622.firebaseapp.com",
@@ -150,333 +133,217 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // DOM
-  const loginScreen = document.getElementById('loginScreen');
-  const hud = document.getElementById('hud');
-  const centerHUD = document.getElementById('centerHUD');
-  const world = document.getElementById('world');
-  const moneyEl = document.getElementById('money');
-  const levelEl = document.getElementById('level');
-  const xpFill = document.getElementById('xpFill');
-  const scrollIncomeEl = document.getElementById('scrollIncome');
-  const blockValueEl = document.getElementById('blockValue');
-  const loginMsg = document.getElementById('loginMsg');
-  const leadersList = document.getElementById('leadersList');
-  const eventStatus = document.getElementById('eventStatus');
-  const prestigeMultEl = document.getElementById('prestigeMult');
-  const displayNameEl = document.getElementById('displayName');
-  const emailLabel = document.getElementById('emailLabel');
-  const saveStatus = document.getElementById('saveStatus');
+  // --- STATE ---
+  let money=0, block=10, blockScroll=1, level=1, xp=0;
+  let upBC=100, upSC=150;
+  let prestigePoints=0, prestigeMultiplier=1;
+  let userId=null, userEmail='', displayName='Player';
+  let currentBG='bg1', currentBlock='block1';
+  let worldY=0, bgY=0, auto=false;
+  let lastSave=Date.now();
+  let achievements={firstMoney:false,firstUpgrade:false,level10:false,millionaire:false};
+  let eventMultiplier=1;
+  const world=document.getElementById('world');
 
-  const ding = document.getElementById('ding'), cash = document.getElementById('cash');
+  // --- DOM shortcuts ---
+  const moneyEl=document.getElementById('money'),
+  levelEl=document.getElementById('level'),
+  xpFill=document.getElementById('xpFill'),
+  scrollIncomeEl=document.getElementById('scrollIncome'),
+  blockValueEl=document.getElementById('blockValue'),
+  leadersList=document.getElementById('leadersList'),
+  eventStatus=document.getElementById('eventStatus'),
+  prestigeMultEl=document.getElementById('prestigeMult'),
+  displayNameEl=document.getElementById('displayName'),
+  emailLabel=document.getElementById('emailLabel'),
+  saveStatus=document.getElementById('saveStatus'),
+  ding=document.getElementById('ding'),
+  cash=document.getElementById('cash');
 
-  // inputs/buttons
-  const emailI = document.getElementById('email'), passI = document.getElementById('password');
-  const loginBtn = document.getElementById('loginBtn'), registerBtn = document.getElementById('registerBtn'), guestBtn = document.getElementById('guestBtn');
-  const upBlock = document.getElementById('upBlock'), upScroll = document.getElementById('upScroll'), autoBtn = document.getElementById('autoScrollBtn');
-  const prestigeBtn = document.getElementById('prestigeBtn'), dailyBtn = document.getElementById('dailyBtn'), logoutBtn = document.getElementById('logoutBtn');
-  const bgSkin1 = document.getElementById('bgSkin1'), bgSkin2 = document.getElementById('bgSkin2');
-  const updateProfileBtn = document.getElementById('updateProfile');
+  // --- HELPERS ---
+  function formatNumber(n){
+    const abs=Math.abs(n);
+    if(abs>=1e12)return(n/1e12).toFixed(2)+'T';
+    if(abs>=1e9)return(n/1e9).toFixed(2)+'B';
+    if(abs>=1e6)return(n/1e6).toFixed(2)+'M';
+    if(abs>=1e3)return(n/1e3).toFixed(2)+'K';
+    return n.toFixed(0);
+  }
+  function xpNeed(){return Math.round(100*Math.pow(1.6,level-1));}
+  function playSound(a){try{a.currentTime=0;a.play();}catch{}}
+  function floatText(x,y,t,color='var(--accent)'){const el=document.createElement('div');el.className='float';el.style.left=x+'px';el.style.top=y+'px';el.style.color=color;el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),900);}
+  function applyBg(){document.body.style.background=currentBG==='bg2'?'linear-gradient(0deg,#00ffcc,#0066ff,#9900ff)':'linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966)';}
 
-  // state
-  let money = 0, block = 10, blockScroll = 1, level = 1, xp = 0;
-  let upBC = 100, upSC = 150;
-  let worldY = 0, bgY = 0, auto = false;
-  let currentBG = 'bg1', currentBlock = 'block1';
-  let prestigePoints = 0, prestigeMultiplier = 1;
-  let userId = null, userEmail = '', displayName = 'Player';
-  let lastSave = Date.now();
-
-  function xpNeed(){ return Math.round(100 * Math.pow(1.6, level-1)); }
   function updateUI(){
-    moneyEl.textContent = '£' + Math.floor(money).toLocaleString();
-    levelEl.textContent = level;
-    xpFill.style.width = Math.min(100, xp / xpNeed() * 100) + '%';
-    scrollIncomeEl.textContent = blockScroll;
-    blockValueEl.textContent = block;
-    document.getElementById('upBlock').textContent = `Upgrade Block (${upBC.toLocaleString()})`;
-    document.getElementById('upScroll').textContent = `Upgrade Scroll (${upSC.toLocaleString()})`;
-    prestigeMultEl.textContent = 'x' + prestigeMultiplier;
-    displayNameEl.textContent = displayName || 'Player';
-    emailLabel.textContent = userEmail || '';
-    saveStatus.textContent = (Date.now() - lastSave < 5000) ? 'Saved' : 'Saving...';
+    moneyEl.textContent='£'+formatNumber(money);
+    levelEl.textContent=level;
+    xpFill.style.width=Math.min(100,xp/xpNeed()*100)+'%';
+    scrollIncomeEl.textContent=formatNumber(blockScroll);
+    blockValueEl.textContent=formatNumber(block);
+    document.getElementById('upBlock').textContent=`Upgrade Block (£${formatNumber(upBC)})`;
+    document.getElementById('upScroll').textContent=`Upgrade Scroll (£${formatNumber(upSC)})`;
+    prestigeMultEl.textContent='x'+prestigeMultiplier;
+    displayNameEl.textContent=displayName||'Player';
+    emailLabel.textContent=userEmail||'';
+    saveStatus.textContent=(Date.now()-lastSave<5000)?'Saved':'Saving...';
+    checkAchievements();
   }
 
-  function playSound(node){ try{ node.currentTime = 0; node.play(); }catch(e){} }
-  function floatText(x,y,t,color='var(--accent)'){ const el = document.createElement('div'); el.className='float'; el.style.left = x+'px'; el.style.top = y+'px'; el.style.color = color; el.textContent = t; document.body.appendChild(el); setTimeout(()=>el.remove(),900); }
+  function addXP(a){xp+=a;while(xp>=xpNeed()){xp-=xpNeed();level++;playSound(ding);}updateUI();}
+  function addMoney(a){money+=a;updateUI();}
 
-  function addXP(a){
-    xp += a;
-    while(xp >= xpNeed()){
-      xp -= xpNeed(); level++; playSound(ding); // level up
-    }
-    updateUI();
-  }
-
-  // save & load
+  // --- SAVE / LOAD ---
   async function saveGame(){
-    lastSave = Date.now(); updateUI();
-    if(!userId) return;
-    const docRef = doc(db, 'users', userId);
+    lastSave=Date.now();updateUI();
+    if(!userId)return;
     try{
-      await setDoc(docRef, {
-        money, block, blockScroll, level, xp, currentBG, currentBlock, prestigePoints, prestigeMultiplier,
-        lastUpdated: serverTimestamp(), displayName
-      }, { merge: true });
-      // update leaderboard entry
-      const lbRef = doc(db, 'leaderboard', userId);
-      await setDoc(lbRef, { uid: userId, displayName, money, updated: serverTimestamp() }, { merge: true });
-      lastSave = Date.now();
-      updateUI();
-    }catch(e){ console.error('save error', e); }
+      const ref=doc(db,'users',userId);
+      await setDoc(ref,{money,block,blockScroll,level,xp,upBC,upSC,currentBG,currentBlock,prestigePoints,prestigeMultiplier,achievements,displayName,lastUpdated:serverTimestamp()},{merge:true});
+      const lbRef=doc(db,'leaderboard',userId);
+      await setDoc(lbRef,{uid:userId,displayName,money,updated:serverTimestamp()},{merge:true});
+      lastSave=Date.now();updateUI();
+    }catch(e){console.error(e);}
   }
-
   async function loadGame(uid){
-    if(!uid) return;
-    const snap = await getDoc(doc(db, 'users', uid));
-    const d = snap.data() || {};
-    money = d.money ?? 0;
-    block = d.block ?? 10;
-    blockScroll = d.blockScroll ?? 1;
-    level = d.level ?? 1;
-    xp = d.xp ?? 0;
-    currentBG = d.currentBG ?? 'bg1';
-    currentBlock = d.currentBlock ?? 'block1';
-    prestigePoints = d.prestigePoints ?? 0;
-    prestigeMultiplier = d.prestigeMultiplier ?? 1;
-    displayName = d.displayName ?? (userEmail.split('@')[0]);
-    applyBg();
-    updateUI();
+    const snap=await getDoc(doc(db,'users',uid));
+    const d=snap.data()||{};
+    money=d.money??0;block=d.block??10;blockScroll=d.blockScroll??1;level=d.level??1;xp=d.xp??0;
+    upBC=d.upBC??100;upSC=d.upSC??150;currentBG=d.currentBG??'bg1';currentBlock=d.currentBlock??'block1';
+    prestigePoints=d.prestigePoints??0;prestigeMultiplier=d.prestigeMultiplier??1;
+    achievements=d.achievements??achievements;displayName=d.displayName??(userEmail.split('@')[0]);
+    applyBg();updateUI();
   }
 
-  // leaderboard display
-  async function refreshLeaderboard(){
-    try{
-      const q = query(collection(db, 'leaderboard'), orderBy('money','desc'), limit(6));
-      const snaps = await getDocs(q);
-      leadersList.innerHTML = '';
-      let rank = 1;
-      for(const s of snaps.docs){
-        const data = s.data();
-        const row = document.createElement('div'); row.className='row';
-        row.innerHTML = `<div>#${rank} ${escapeHtml(data.displayName||'Anon')}</div><div>£${Math.floor(data.money||0).toLocaleString()}</div>`;
-        leadersList.appendChild(row); rank++;
-      }
-    }catch(e){ console.error(e); }
+  // --- ACHIEVEMENTS ---
+  function checkAchievements(){
+    if(!achievements.firstMoney&&money>=100){achievements.firstMoney=true;floatText(innerWidth/2,innerHeight/2,'🏆 First £100!');}
+    if(!achievements.firstUpgrade&&(block>10||blockScroll>1)){achievements.firstUpgrade=true;floatText(innerWidth/2,innerHeight/2,'🏆 First Upgrade!');}
+    if(!achievements.level10&&level>=10){achievements.level10=true;floatText(innerWidth/2,innerHeight/2,'🏆 Level 10!');}
+    if(!achievements.millionaire&&money>=1_000_000){achievements.millionaire=true;floatText(innerWidth/2,innerHeight/2,'💰 Millionaire!');}
+    if(userId)debounceSave();
   }
 
-  // helper
-  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
+  // --- GAMEPLAY ---
+  function spawnBlock(){
+    const b=document.createElement('div');b.className='money-block';b.textContent='💰';
+    b.style.left=Math.random()*window.innerWidth+'px';b.style.top=Math.random()*window.innerHeight+'px';
+    b.addEventListener('click',ev=>{
+      const gain=Math.round(block*prestigeMultiplier*eventMultiplier);
+      addMoney(gain);playSound(cash);
+      floatText(ev.clientX,ev.clientY,'+'+formatNumber(gain),'#0f8');
+      world.removeChild(b);
+    });
+    world.appendChild(b);
+    setTimeout(()=>{if(b.parentNode)world.removeChild(b);},3000);
+  }
+  setInterval(()=>{if(document.getElementById('hud').style.display!=='none')spawnBlock();},2000);
 
-  // login/register/guest
-  loginBtn.onclick = async ()=>{ try{ await signInWithEmailAndPassword(auth, emailI.value, passI.value); }catch(e){ loginMsg.textContent = 'Login failed: ' + e.message; } };
-  registerBtn.onclick = async ()=>{ try{
-    const cred = await createUserWithEmailAndPassword(auth, emailI.value, passI.value);
-    const uid = cred.user.uid;
-    await setDoc(doc(db,'users', uid), { money:0, blockScroll:1, block:10, level:1, xp:0, currentBG:'bg1', currentBlock:'block1', displayName: emailI.value.split('@')[0] });
-  }catch(e){ loginMsg.textContent = 'Register failed: ' + e.message; } };
-  guestBtn.onclick = ()=>{ userId = null; userEmail = ''; displayName = 'Guest'; loginScreen.style.display='none'; hud.style.display='block'; centerHUD.style.display='block'; spawnTickLoop(); refreshLeaderboard(); updateUI(); };
-
-  logoutBtn.onclick = async ()=>{ await signOut(auth); location.reload(); };
-
-  updateProfileBtn.onclick = async ()=>{
-    const name = prompt('Enter display name (max 20 chars):', displayName || '');
-    if(!name) return;
-    displayName = name.slice(0,20);
-    if(auth.currentUser){
-      try{ await updateProfile(auth.currentUser, { displayName }); }catch(e){}
-      await saveGame();
-      refreshLeaderboard();
-    }
-    updateUI();
-  };
-
-  // on auth
-  onAuthStateChanged(auth, async (u)=>{
-    if(u){
-      userId = u.uid; userEmail = u.email || '';
-      loginScreen.style.display = 'none';
-      hud.style.display = 'block';
-      centerHUD.style.display = 'block';
-      displayName = u.displayName || (userEmail.split('@')[0]);
-      await loadGame(userId);
-      refreshLeaderboard();
-      spawnTickLoop();
-      saveGame(); // immediate save
-    }else{
-      // show login
-      loginScreen.style.display = 'flex';
-      hud.style.display = 'none';
-      centerHUD.style.display = 'none';
-      refreshLeaderboard();
+  window.addEventListener('wheel',e=>{
+    if(e.deltaY!==0){
+      worldY+=e.deltaY;bgY+=e.deltaY*0.02;
+      document.body.style.backgroundPosition=`0 ${bgY}px`;
+      const income=blockScroll*prestigeMultiplier*eventMultiplier;
+      addMoney(income);
+      addXP(Math.abs(e.deltaY)*0.01);
     }
   });
 
-  // scroll earning + world movement
-  window.addEventListener('wheel', e=>{
-    const delta = e.deltaY;
-    worldY += delta * 0.5; bgY += delta * 0.6;
-    world.style.transform = `translateY(${ -worldY }px)`;
-    document.body.style.backgroundPosition = `0px ${bgY}px`;
-    if(delta>0){
-      const earn = (delta * 0.05) * blockScroll * prestigeMultiplier;
-      money += earn;
-      addXP(Math.abs(delta) * 0.02);
-      if(Math.random() < 0.06) spawnBlock();
-      updateUI();
-      if(userId) debounceSave();
-    }
-  }, { passive: true });
-
-  // spawn money blocks
-  function spawnBlock(){
-    const b = document.createElement('div'); b.className = 'money-block';
-    const fake = Math.random() < 0.18;
-    if(fake) b.style.borderColor = 'crimson';
-    b.textContent = fake ? '⚠️' : (currentBlock==='block2' ? '🟨' : '💰');
-    const top = Math.random() * (innerHeight - 120) + 60 + window.scrollY;
-    const left = Math.random() * (innerWidth - 120) + 20;
-    b.style.left = left + 'px';
-    b.style.top = (top + worldY % 200) + 'px';
-    world.appendChild(b);
-    b.addEventListener('click', async (ev)=>{
-      if(fake){
-        const loss = Math.ceil(level*0.5);
-        level = Math.max(1, level - loss); xp = 0;
-        floatText(ev.clientX, ev.clientY, `-${loss} LVL`, 'red');
-        b.remove();
-      }else{
-        money += block * prestigeMultiplier;
-        floatText(ev.clientX, ev.clientY, `+£${block * prestigeMultiplier}`);
-        playSound(cash);
-        b.remove();
+  document.getElementById('upBlock').onclick=()=>{
+    if(money>=upBC){money-=upBC;block+=5;upBC=Math.round(upBC*1.5);updateUI();debounceSave();checkAchievements();}
+  };
+  document.getElementById('upScroll').onclick=()=>{
+    if(money>=upSC){money-=upSC;blockScroll+=1;upSC=Math.round(upSC*1.6);updateUI();debounceSave();checkAchievements();}
+  };
+  document.getElementById('prestigeBtn').onclick=()=>{
+    const possible=Math.floor(level/10);
+    if(possible>0){
+      if(confirm(`Rebirth for ${formatNumber(possible)} prestige points?`)){
+        prestigePoints+=possible;
+        prestigeMultiplier=1+prestigePoints*0.5;
+        level=1;xp=0;money=0;block=10;blockScroll=1;
+        upBC=100;upSC=150;
+        floatText(innerWidth/2,innerHeight/2,'🌟 Rebirth! x'+prestigeMultiplier,'gold');
+        debounceSave();updateUI();
       }
-      updateUI(); if(userId) debounceSave();
+    } else alert('Need level 10+ to prestige');
+  };
+
+  document.getElementById('autoScrollBtn').onclick=()=>{
+    auto=!auto;document.getElementById('autoScrollBtn').textContent='Auto: '+(auto?'ON':'OFF');
+  };
+  setInterval(()=>{if(auto)addMoney(blockScroll*prestigeMultiplier*eventMultiplier);},100);
+
+  document.getElementById('bgSkin1').onclick=()=>{currentBG='bg1';applyBg();debounceSave();}
+  document.getElementById('bgSkin2').onclick=()=>{if(level>=4){currentBG='bg2';applyBg();debounceSave();}else alert('Reach level 4 to unlock!');}
+
+  // --- EVENTS ---
+  setInterval(()=>{
+    if(Math.random()<0.05){ // gold rush
+      eventMultiplier=2;eventStatus.textContent='💎 Gold Rush! x2';
+      floatText(innerWidth/2,100,'💎 GOLD RUSH!');
+      setTimeout(()=>{eventMultiplier=1;eventStatus.textContent='none';},15000);
+    }
+  },10000);
+
+  // --- SAVE THROTTLE ---
+  let saveTimeout;function debounceSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(saveGame,1500);}
+  setInterval(saveGame,15000);
+
+  // --- AUTH ---
+  const emailInput=document.getElementById('email'),passInput=document.getElementById('password');
+  document.getElementById('loginBtn').onclick=()=>signInWithEmailAndPassword(auth,emailInput.value,passInput.value).catch(()=>alert('Invalid login'));
+  document.getElementById('registerBtn').onclick=()=>createUserWithEmailAndPassword(auth,emailInput.value,passInput.value).catch(()=>alert('Register failed'));
+  document.getElementById('guestBtn').onclick=()=>{
+    userId='guest-'+Date.now();userEmail='guest@guest';document.getElementById('loginScreen').style.display='none';
+    document.getElementById('hud').style.display='block';document.getElementById('centerHUD').style.display='block';updateUI();
+  };
+  document.getElementById('logoutBtn').onclick=()=>signOut(auth);
+
+  onAuthStateChanged(auth,async user=>{
+    if(user){userId=user.uid;userEmail=user.email;displayName=user.displayName||userEmail.split('@')[0];
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('hud').style.display='block';
+      document.getElementById('centerHUD').style.display='block';
+      await loadGame(user.uid);updateUI();loadLeaderboard();
+    }else{
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('hud').style.display='none';
+      document.getElementById('centerHUD').style.display='none';
+    }
+  });
+
+  // --- LEADERBOARD ---
+  async function loadLeaderboard(){
+    const q=query(collection(db,'leaderboard'),orderBy('money','desc'),limit(5));
+    const docs=await getDocs(q);
+    leadersList.innerHTML='';
+    docs.forEach(docx=>{
+      const d=docx.data();
+      leadersList.innerHTML+=`<div class="row"><span>${d.displayName}</span><span>£${formatNumber(d.money||0)}</span></div>`;
     });
-    setTimeout(()=> { b.style.opacity='0'; setTimeout(()=>b.remove(),300); }, 8000);
   }
 
-  // upgrades
-  upBlock.onclick = ()=>{ if(money >= upBC){ money -= upBC; block = Math.round(block * 1.7); upBC = Math.round(upBC * 2.2); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
-  upScroll.onclick = ()=>{ if(money >= upSC){ money -= upSC; blockScroll = Math.round(blockScroll * 1.7); upSC = Math.round(upSC * 2.4); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
-  moneyEl.textContent = '£' + formatNumber(money);
-document.getElementById('upBlock').textContent = `Upgrade Block (${formatNumber(upBC)})`;
-document.getElementById('upScroll').textContent = `Upgrade Scroll (${formatNumber(upSC)})`;
-
-  // auto scroll
-  autoBtn.onclick = ()=>{ auto = !auto; autoBtn.textContent = auto ? 'Auto: ON' : 'Auto: OFF'; };
-
-  setInterval(()=>{ if(auto){ const delta = 10; worldY += delta * 0.5; bgY += delta * 0.4; world.style.transform = `translateY(${-worldY}px)`; document.body.style.backgroundPosition = `0px ${bgY}px`; const earn = delta * 0.05 * blockScroll * prestigeMultiplier * 0.12; money += earn; if(Math.random()<0.03) spawnBlock(); updateUI(); if(userId) debounceSave(); } }, 120);
-
-  // skins
-  function applyBg(){ if(currentBG==='bg1') document.body.style.background = 'linear-gradient(0deg,#ff66cc,#66ccff,#99ff66,#ff9966)'; else document.body.style.background = 'linear-gradient(45deg,#ff00ff,#00ffff,#ffff00,#ff6600)'; }
-  bgSkin1.onclick = ()=>{ currentBG='bg1'; applyBg(); if(userId) saveGame(); };
-  bgSkin2.onclick = ()=>{ if(level>=4 && money >= 124313){ money -= 124313; currentBG='bg2'; applyBg(); updateUI(); if(userId) debounceSave(); } else alert('Need Level 4 & £124,313'); };
-
-  // prestige (rebirth)
-  prestigeBtn.onclick = ()=> {
-    const possible = Math.floor(Math.sqrt(money/10000));
-    if(possible <= 0){ if(confirm('Rebirth gives prestige points (increase income). Not enough for 1 point. Rebirth anyway?')) { doPrestige(0); } return; }
-    if(confirm(`Rebirth for ${possible} prestige points? (resets money, level, upgrades)`) ){
-      doPrestige(possible);
-    }
-  };
-  function doPrestige(points){
-    prestigePoints += points;
-    prestigeMultiplier = Math.min(1 + prestigePoints * 0.12, 20); // cap at 20x
-    money = 0; blockScroll = 1; block = 10; level = 1; xp = 0; upBC = 100; upSC = 150;
-    playSound(ding); updateUI(); if(userId) saveGame();
-}
-
-function formatNumber(n){
-    const abs = Math.abs(n);
-    if(abs >= 1e12) return (n/1e12).toFixed(2)+'T';
-    if(abs >= 1e9) return (n/1e9).toFixed(2)+'B';
-    if(abs >= 1e6) return (n/1e6).toFixed(2)+'M';
-    if(abs >= 1e3) return (n/1e3).toFixed(2)+'K';
-    return n.toFixed(0);
-}
-
-  // daily bonus
-  dailyBtn.onclick = async ()=>{
-    if(!userId){ alert('Login to claim daily bonus'); return; }
-    const snap = await getDoc(doc(db, 'users', userId));
-    const lastClaim = snap.data()?.lastDaily || '';
-    const today = new Date().toDateString();
-    if(lastClaim === today){ alert('Already claimed today'); return; }
-    money += 5000 * prestigeMultiplier;
-    await setDoc(doc(db,'users',userId), { lastDaily: today, money }, { merge: true });
-    alert('Daily claimed: £' + Math.floor(5000*prestigeMultiplier));
-    updateUI();
+  document.getElementById('updateProfile').onclick=async()=>{
+    const name=prompt('Enter display name',displayName);
+    if(name){displayName=name;if(auth.currentUser){await updateProfile(auth.currentUser,{displayName:name});}
+      debounceSave();updateUI();}
   };
 
-  // random "gold rush" events
-  let eventActive = false;
-  function maybeTriggerEvent(){
-    if(eventActive) return;
-    if(Math.random() < 0.008){ goldRush(); }
-  }
-  function goldRush(){
-    eventActive = true; eventStatus.textContent = 'GOLD RUSH! x2 income';
-    const banner = document.createElement('div'); banner.className='eventBanner'; banner.textContent='GOLD RUSH: Double income for 10s!';
-    document.body.appendChild(banner);
-    prestigeMultiplier *= 2;
-    setTimeout(()=>{ prestigeMultiplier /= 2; eventActive = false; eventStatus.textContent = 'none'; banner.remove(); updateUI(); }, 10000);
-    setTimeout(()=>updateUI(),20);
-  }
-  setInterval(maybeTriggerEvent, 2000);
-
-  // spawn tick loop ensures some blocks spawn even without user actions
-  let spawnLoopStarted = false;
-  function spawnTickLoop(){
-    if(spawnLoopStarted) return;
-    spawnLoopStarted = true;
-    setInterval(()=>{ if(Math.random()<0.07) spawnBlock(); }, 1200);
-  }
-
-  // debounce save
-  let saveTimer;
-  function debounceSave(){
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(()=> saveGame(), 1200);
-    saveStatus.textContent = 'Saving...';
-  }
-
-  // periodic leaderboard refresh & autosave
-  setInterval(()=>{ refreshLeaderboard(); if(userId) saveGame(); updateUI(); }, 8000);
-
-  // small helper to show top players on login screen
-  async function showTopOnLogin(){
-    try{
-      const q = query(collection(db, 'leaderboard'), orderBy('money','desc'), limit(5));
-      const snaps = await getDocs(q);
-      const lines = [];
-      let r=1;
-      snaps.forEach(s=> lines.push(`#${r++} ${escapeHtml(s.data().displayName||'Anon')} — £${Math.floor(s.data().money||0).toLocaleString()}`));
-      document.getElementById('topPlayers').innerHTML = '<b>Top players</b><br>' + (lines.length ? lines.join('<br>') : 'no data yet');
-    }catch(e){ console.warn(e); }
-  }
-  showTopOnLogin();
-
-  // sanitize display name on change and update leaderboard name
-  async function setDisplayNameForUser(name){
-    displayName = (name || '').slice(0,20);
-    if(auth.currentUser){
-      try{ await updateProfile(auth.currentUser, { displayName }); }catch(e){}
-      if(userId) await saveGame();
-      refreshLeaderboard();
+  // --- DAILY BONUS ---
+  document.getElementById('dailyBtn').onclick=()=>{
+    const key='daily-'+new Date().toDateString();
+    if(localStorage.getItem(key))alert('Come back tomorrow!');
+    else{
+      const bonus=1000*prestigeMultiplier;
+      money+=bonus;
+      floatText(innerWidth/2,innerHeight/2,'🎁 Daily £'+formatNumber(bonus));
+      localStorage.setItem(key,'yes');
+      debounceSave();updateUI();
     }
-    updateUI();
-  }
+  };
 
-  // keyboard: press P to spawn block (debug)
-  window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'p') spawnBlock(); });
-
-  // initial UI tick
-  updateUI();
-  refreshLeaderboard();
-  spawnTickLoop();
-
+  // --- AUTO LOOP ---
+  setInterval(()=>updateUI(),2000);
 </script>
 </body>
 </html>
