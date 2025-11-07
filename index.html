@@ -189,13 +189,13 @@
 
   function xpNeed(){ return Math.round(100 * Math.pow(1.6, level-1)); }
   function updateUI(){
-    moneyEl.textContent = '£' + Math.floor(money).toLocaleString();
+    moneyEl.textContent = '£' + formatNumber(money);
     levelEl.textContent = level;
     xpFill.style.width = Math.min(100, xp / xpNeed() * 100) + '%';
-    scrollIncomeEl.textContent = blockScroll;
-    blockValueEl.textContent = block;
-    document.getElementById('upBlock').textContent = `Upgrade Block (${upBC.toLocaleString()})`;
-    document.getElementById('upScroll').textContent = `Upgrade Scroll (${upSC.toLocaleString()})`;
+    scrollIncomeEl.textContent = formatNumber(blockScroll);
+    blockValueEl.textContent = formatNumber(block);
+    document.getElementById('upBlock').textContent = `Upgrade Block (${formatNumber(upBC)})`;
+    document.getElementById('upScroll').textContent = `Upgrade Scroll (${formatNumber(upSC)})`;
     prestigeMultEl.textContent = 'x' + prestigeMultiplier;
     displayNameEl.textContent = displayName || 'Player';
     emailLabel.textContent = userEmail || '';
@@ -221,6 +221,7 @@
     try{
       await setDoc(docRef, {
         money, block, blockScroll, level, xp, currentBG, currentBlock, prestigePoints, prestigeMultiplier,
+        upBC, upSC,
         lastUpdated: serverTimestamp(), displayName
       }, { merge: true });
       // update leaderboard entry
@@ -244,6 +245,8 @@
     currentBlock = d.currentBlock ?? 'block1';
     prestigePoints = d.prestigePoints ?? 0;
     prestigeMultiplier = d.prestigeMultiplier ?? 1;
+    upBC = d.upBC ?? 100;
+    upSC = d.upSC ?? 150;
     displayName = d.displayName ?? (userEmail.split('@')[0]);
     applyBg();
     updateUI();
@@ -259,7 +262,7 @@
       for(const s of snaps.docs){
         const data = s.data();
         const row = document.createElement('div'); row.className='row';
-        row.innerHTML = `<div>#${rank} ${escapeHtml(data.displayName||'Anon')}</div><div>£${Math.floor(data.money||0).toLocaleString()}</div>`;
+        row.innerHTML = `<div>#${rank} ${escapeHtml(data.displayName||'Anon')}</div><div>£${formatNumber(data.money||0)}</div>`;
         leadersList.appendChild(row); rank++;
       }
     }catch(e){ console.error(e); }
@@ -347,7 +350,7 @@
         b.remove();
       }else{
         money += block * prestigeMultiplier;
-        floatText(ev.clientX, ev.clientY, `+£${block * prestigeMultiplier}`);
+        floatText(ev.clientX, ev.clientY, `+£${formatNumber(block * prestigeMultiplier)}`);
         playSound(cash);
         b.remove();
       }
@@ -359,9 +362,6 @@
   // upgrades
   upBlock.onclick = ()=>{ if(money >= upBC){ money -= upBC; block = Math.round(block * 1.7); upBC = Math.round(upBC * 2.2); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
   upScroll.onclick = ()=>{ if(money >= upSC){ money -= upSC; blockScroll = Math.round(blockScroll * 1.7); upSC = Math.round(upSC * 2.4); playSound(ding); updateUI(); if(userId) debounceSave(); } else alert('Not enough money'); };
-  moneyEl.textContent = '£' + formatNumber(money);
-document.getElementById('upBlock').textContent = `Upgrade Block (${formatNumber(upBC)})`;
-document.getElementById('upScroll').textContent = `Upgrade Scroll (${formatNumber(upSC)})`;
 
   // auto scroll
   autoBtn.onclick = ()=>{ auto = !auto; autoBtn.textContent = auto ? 'Auto: ON' : 'Auto: OFF'; };
@@ -388,14 +388,14 @@ document.getElementById('upScroll').textContent = `Upgrade Scroll (${formatNumbe
     playSound(ding); updateUI(); if(userId) saveGame();
 }
 
-function formatNumber(n){
+  function formatNumber(n){
     const abs = Math.abs(n);
-    if(abs >= 1e12) return (n/1e12).toFixed(2)+'T';
-    if(abs >= 1e9) return (n/1e9).toFixed(2)+'B';
-    if(abs >= 1e6) return (n/1e6).toFixed(2)+'M';
-    if(abs >= 1e3) return (n/1e3).toFixed(2)+'K';
-    return n.toFixed(0);
-}
+    if(abs >= 1e12) return (n/1e12).toFixed(2)+'t';
+    if(abs >= 1e9) return (n/1e9).toFixed(2)+'b';
+    if(abs >= 1e6) return (n/1e6).toFixed(2)+'m';
+    if(abs >= 1e3) return (n/1e3).toFixed(2)+'k';
+    return Math.floor(n).toLocaleString();
+  }
 
   // daily bonus
   dailyBtn.onclick = async ()=>{
@@ -406,7 +406,7 @@ function formatNumber(n){
     if(lastClaim === today){ alert('Already claimed today'); return; }
     money += 5000 * prestigeMultiplier;
     await setDoc(doc(db,'users',userId), { lastDaily: today, money }, { merge: true });
-    alert('Daily claimed: £' + Math.floor(5000*prestigeMultiplier));
+    alert('Daily claimed: £' + formatNumber(5000*prestigeMultiplier));
     updateUI();
   };
 
@@ -452,7 +452,7 @@ function formatNumber(n){
       const snaps = await getDocs(q);
       const lines = [];
       let r=1;
-      snaps.forEach(s=> lines.push(`#${r++} ${escapeHtml(s.data().displayName||'Anon')} — £${Math.floor(s.data().money||0).toLocaleString()}`));
+      snaps.forEach(s=> lines.push(`#${r++} ${escapeHtml(s.data().displayName||'Anon')} — £${formatNumber(s.data().money||0)}`));
       document.getElementById('topPlayers').innerHTML = '<b>Top players</b><br>' + (lines.length ? lines.join('<br>') : 'no data yet');
     }catch(e){ console.warn(e); }
   }
