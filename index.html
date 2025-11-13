@@ -279,7 +279,7 @@ document.getElementById('closeAchievements').onclick = () => {
     world.appendChild(b);
     setTimeout(()=>{if(b.parentNode)world.removeChild(b);},3000);
   }
-  setInterval(()=>{if(document.getElementById('hud').style.display!=='none')spawnBlock();},2000);
+  setInterval(()=>{if(document.getElementById('hud').style.display!=='none')spawnBlock();},5000);
 
   window.addEventListener('wheel',e=>{
     if(e.deltaY!==0){
@@ -314,7 +314,7 @@ document.getElementById('closeAchievements').onclick = () => {
   document.getElementById('autoScrollBtn').onclick=()=>{
     auto=!auto;document.getElementById('autoScrollBtn').textContent='Auto: '+(auto?'ON':'OFF');
   };
-  setInterval(()=>{if(auto)addMoney(blockScroll*prestigeMultiplier*eventMultiplier);},100);
+  setInterval(()=>{if(auto)addMoney(blockScroll*prestigeMultiplier*eventMultiplier);},300);
 
   document.getElementById('bgSkin1').onclick=()=>{currentBG='bg1';applyBg();debounceSave();}
   document.getElementById('bgSkin2').onclick=()=>{if(level>=4){currentBG='bg2';applyBg();debounceSave();}else alert('Reach level 4 to unlock!');}
